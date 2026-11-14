@@ -1,12 +1,14 @@
 package dev.standgen.stand;
 
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 
 public class StandData {
@@ -100,32 +102,37 @@ public class StandData {
         return v >= 80 ? "A" : v >= 60 ? "B" : v >= 40 ? "C" : v >= 20 ? "D" : "E";
     }
 
+    private static MutableText statLine(String key, int v) {
+        return Text.translatable("standgen.stat." + key).append(" " + rank(v) + " (" + v + ")");
+    }
+
     public List<Text> describe() {
         List<Text> l = new ArrayList<>();
         l.add(Text.literal("✦ " + name + " ✦").formatted(Formatting.GOLD, Formatting.BOLD));
-        l.add(Text.literal("Душа: " + primary.title + " / " + secondary.title).formatted(Formatting.YELLOW));
-        l.add(Text.literal("Форма: " + form.title + (form == StandForm.WEAPON ? " (" + primary.weaponName + ")" : ""))
-                .formatted(Formatting.YELLOW));
-        l.add(Text.literal("Стадія " + stage + ": " + Progression.stageName(stage)).formatted(Formatting.AQUA));
-        l.add(Text.literal("Сила " + rank(power) + " (" + power + ")  Швидкість " + rank(speed) + " (" + speed + ")")
-                .formatted(Formatting.WHITE));
-        l.add(Text.literal("Дальність " + rank(range) + " (" + range + ")  Стійкість " + rank(durability)
-                + " (" + durability + ")  Точність " + rank(precision) + " (" + precision + ")")
-                .formatted(Formatting.WHITE));
+        l.add(Text.translatable("msg.standgen.soul", primary.text(), secondary.text()).formatted(Formatting.YELLOW));
+        l.add((form == StandForm.WEAPON
+                ? Text.translatable("msg.standgen.form_weapon", form.text(), primary.weaponText())
+                : Text.translatable("msg.standgen.form", form.text())).formatted(Formatting.YELLOW));
+        l.add(Text.translatable("msg.standgen.stage", stage, Progression.stageText(stage)).formatted(Formatting.AQUA));
+        l.add(statLine("power", power).append("   ").append(statLine("speed", speed)).formatted(Formatting.WHITE));
+        l.add(statLine("range", range).append("   ").append(statLine("durability", durability))
+                .append("   ").append(statLine("precision", precision)).formatted(Formatting.WHITE));
         String[] keys = {"X", "C", "V", "B"};
         for (int i = 0; i < 4; i++) {
             boolean open = stage >= unlockStage(i);
-            l.add(Text.literal("[" + keys[i] + "] " + skill(i).title + (open ? "" : " (з " + unlockStage(i) + " стадії)"))
+            l.add((open
+                    ? Text.translatable("msg.standgen.skill", keys[i], skill(i).text())
+                    : Text.translatable("msg.standgen.skill_locked", keys[i], skill(i).text(), unlockStage(i)))
                     .formatted(open ? Formatting.GREEN : Formatting.GRAY));
         }
         return l;
     }
 
-    public String scoreLine() {
-        StringBuilder sb = new StringBuilder("Бали душі: ");
+    public Text scoreLine() {
+        MutableText t = Text.translatable("msg.standgen.scores");
         for (Archetype a : Archetype.values())
-            sb.append(a.title).append(' ').append(String.format("%.2f", scores[a.ordinal()])).append("  ");
-        return sb.toString();
+            t.append(a.text()).append(" " + String.format(Locale.ROOT, "%.2f", scores[a.ordinal()]) + "  ");
+        return t.formatted(Formatting.DARK_GRAY);
     }
 
     public NbtCompound toNbt() {

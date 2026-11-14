@@ -2,6 +2,7 @@ package dev.standgen.item;
 
 import dev.standgen.stand.StandGenerator;
 import dev.standgen.stand.StandManager;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
@@ -20,10 +21,12 @@ import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.UseAction;
 import net.minecraft.world.World;
 
+import java.util.List;
+
 /**
  * Стріла Стенда.
- *  - ПКМ, утримувати 1 секунду: пробудження власного стенда.
- *  - Постріл з лука/арбалета: гравець, у якого влучила стріла, пробуджує стенд (для мультиплеєра).
+ *  - ПКМ, утримувати 1 секунду: пробудження власного стенда (невеликий шанс, що ти недостойний і помреш; не в хардкорі).
+ *  - Постріл з лука/арбалета: гравець, у якого влучила стріла, пробуджує стенд (з тим самим ризиком (StandGenerator.UNWORTHY_CHANCE)).
  */
 public class StandArrowItem extends ArrowItem {
     public static final String TAG = "standgen_arrow";
@@ -39,6 +42,14 @@ public class StandArrowItem extends ArrowItem {
         return arrow;
     }
 
+    @Override
+    public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
+        tooltip.add(Text.translatable("item.standgen.stand_arrow.tooltip1").formatted(Formatting.GRAY));
+        tooltip.add(Text.translatable("item.standgen.stand_arrow.tooltip2",
+                String.format(java.util.Locale.ROOT, "%.1f%%", StandGenerator.UNWORTHY_CHANCE * 100)).formatted(Formatting.DARK_RED));
+        tooltip.add(Text.translatable("item.standgen.stand_arrow.tooltip3").formatted(Formatting.GRAY));
+    }
+
     @Override public int getMaxUseTime(ItemStack stack) { return HOLD_TICKS; }
     @Override public UseAction getUseAction(ItemStack stack) { return UseAction.BOW; }
 
@@ -47,11 +58,11 @@ public class StandArrowItem extends ArrowItem {
         ItemStack stack = user.getStackInHand(hand);
         if (!world.isClient && user instanceof ServerPlayerEntity sp) {
             if (StandManager.get(sp.getServer()).get(sp.getUuid()) != null) {
-                sp.sendMessage(Text.literal("У тебе вже є стенд").formatted(Formatting.RED), true);
+                sp.sendMessage(Text.translatable("msg.standgen.already_has").formatted(Formatting.RED), true);
                 return TypedActionResult.fail(stack);
             }
             if (sp.getHealth() <= 6f) {
-                sp.sendMessage(Text.literal("Ти надто ослаблений для пробудження").formatted(Formatting.RED), true);
+                sp.sendMessage(Text.translatable("msg.standgen.too_weak").formatted(Formatting.RED), true);
                 return TypedActionResult.fail(stack);
             }
         }
@@ -65,7 +76,8 @@ public class StandArrowItem extends ArrowItem {
             sw.spawnParticles(ParticleTypes.ENCHANT, user.getX(), user.getY() + 1.0, user.getZ(), 8, 0.5, 0.6, 0.5, 0.6);
             if (user instanceof ServerPlayerEntity sp) {
                 int left = remainingUseTicks / 4;
-                sp.sendMessage(Text.literal("Стріла пробуджується" + ".".repeat(Math.max(1, 6 - left))).formatted(Formatting.LIGHT_PURPLE), true);
+                sp.sendMessage(Text.translatable("msg.standgen.charging", ".".repeat(Math.max(1, 6 - left)))
+                        .formatted(Formatting.LIGHT_PURPLE), true);
             }
         }
     }
@@ -76,10 +88,12 @@ public class StandArrowItem extends ArrowItem {
         if (StandManager.get(sp.getServer()).get(sp.getUuid()) != null) return stack;
         if (sp.getHealth() <= 6f) return stack;
 
-        sp.damage(world.getDamageSources().magic(), 4f);
         if (!sp.getAbilities().creativeMode) stack.decrement(1);
-        StandGenerator.awaken(sp);
-        world.playSound(null, sp.getX(), sp.getY(), sp.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 1f, 0.8f);
+        // невеликий шанс бути недостойним (UNWORTHY_CHANCE) (не в хардкорі): тоді гравець гине і стенда не отримує
+        if (StandGenerator.awakenByArrow(sp)) {
+            sp.damage(world.getDamageSources().magic(), 4f);
+            world.playSound(null, sp.getX(), sp.getY(), sp.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 1f, 0.8f);
+        }
         return stack;
     }
 }

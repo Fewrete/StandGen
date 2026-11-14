@@ -2,6 +2,7 @@ package dev.standgen.stand;
 
 import net.minecraft.advancement.Advancement;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 /**
  * Стадія гри = кількість виконаних віх (advancements).
  * Щоб додати віху з іншого мода / збірки: Progression.addMilestone(new Identifier("modid", "path"));
+ * Назви стадій: ключі standgen.stage.0 ... standgen.stage.8 у мовних файлах.
  */
 public final class Progression {
     private static final List<Identifier> MILESTONES = new ArrayList<>(List.of(
@@ -22,11 +24,6 @@ public final class Progression {
             new Identifier("end/kill_dragon"),
             new Identifier("end/elytra")
     ));
-
-    private static final String[] NAMES = {
-            "Пробудження", "Залізо", "Алмази", "Нижній світ", "Фортеця",
-            "Візер", "Край", "Володар Краю", "Вінець"
-    };
 
     private Progression() {}
 
@@ -44,7 +41,7 @@ public final class Progression {
         return n;
     }
 
-    public static String stageName(int stage) {
-        return NAMES[Math.min(stage, NAMES.length - 1)];
+    public static Text stageText(int stage) {
+        return Text.translatable("standgen.stage." + Math.min(stage, 8));
     }
 }

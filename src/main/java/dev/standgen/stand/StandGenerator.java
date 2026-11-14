@@ -46,12 +46,30 @@ public final class StandGenerator {
         return d;
     }
 
+    /** Шанс, що стріла визнає гравця недостойним і вб'є його (не діє в хардкорі та в креативі). */
+    public static final float UNWORTHY_CHANCE = 0.001f;
+
     public static void awaken(ServerPlayerEntity p) {
         StandData d = generate(p);
         StandManager m = StandManager.get(p.getServer());
         m.put(p.getUuid(), d);
-        p.sendMessage(Text.literal("Твій стенд пробудився!").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
+        p.sendMessage(Text.translatable("msg.standgen.awakened").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
         for (Text t : d.describe()) p.sendMessage(t);
-        p.sendMessage(Text.literal(d.scoreLine()).formatted(Formatting.DARK_GRAY));
+        p.sendMessage(d.scoreLine());
+    }
+
+    /**
+     * Пробудження стрілою. З імовірністю UNWORTHY_CHANCE гравець недостойний: він гине і стенд не отримує.
+     * @return true якщо стенд видано, false якщо стріла вбила гравця
+     */
+    public static boolean awakenByArrow(ServerPlayerEntity p) {
+        boolean safe = p.getAbilities().creativeMode || p.getServer().isHardcore();
+        if (!safe && p.getRandom().nextFloat() < UNWORTHY_CHANCE) {
+            p.sendMessage(Text.translatable("msg.standgen.unworthy").formatted(Formatting.DARK_RED, Formatting.BOLD));
+            p.damage(p.getDamageSources().genericKill(), Float.MAX_VALUE);
+            return false;
+        }
+        awaken(p);
+        return true;
     }
 }

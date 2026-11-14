@@ -5,6 +5,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -61,8 +63,8 @@ public final class Abilities {
         return null;
     }
 
-    private static void fail(ServerPlayerEntity p, String s) {
-        p.sendMessage(Text.literal(s).formatted(Formatting.RED), true);
+    private static void fail(ServerPlayerEntity p, String key) {
+        p.sendMessage(Text.translatable(key).formatted(Formatting.RED), true);
     }
 
     private static void sound(ServerWorld w, double x, double y, double z, SoundEvent e, float vol, float pitch) {
@@ -76,6 +78,20 @@ public final class Abilities {
         }
     }
 
+    /** Форма Броня носиться на гравці й не може бити далеко: її здібності працюють лише поблизу. */
+    private static boolean armored(StandData d) { return d.form == StandForm.ARMORED; }
+
+    public static LivingEntity nearestHostile(ServerWorld w, ServerPlayerEntity p, double radius) {
+        LivingEntity best = null;
+        double bd = Double.MAX_VALUE;
+        for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(radius),
+                x -> x instanceof Monster && !(x instanceof EndermanEntity) && validTarget(x, p))) {
+            double dd = e.squaredDistanceTo(p);
+            if (dd < bd && dd <= radius * radius) { bd = dd; best = e; }
+        }
+        return best;
+    }
+
     // ---------------- виконання ----------------
     /** @return true якщо здібність спрацювала (тоді йде перезарядка) */
     public static boolean execute(Skill s, ServerPlayerEntity p, StandEntity stand, StandData d) {
@@ -83,7 +99,7 @@ public final class Abilities {
         switch (s) {
             case EXCAVATE -> { return excavate(p, w, d); }
             case BARRAGE -> {
-                stand.startBarrage(40 + d.stage * 5);
+                StandRuntime.startBarrage(p, stand, 40 + d.stage * 5);
                 return true;
             }
             case BASTION -> {
@@ -118,7 +134,7 @@ public final class Abilities {
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 300, 1));
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 300, 1));
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 0));
-                stand.startBarrage(100);
+                StandRuntime.startBarrage(p, stand, 100);
                 w.spawnParticles(ParticleTypes.FLAME, p.getX(), p.getY() + 1, p.getZ(), 40, 0.5, 0.8, 0.5, 0.05);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.4f);
                 return true;
@@ -142,7 +158,7 @@ public final class Abilities {
                 p.heal(4);
                 w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, p.getX(), p.getY() + 1, p.getZ(), 30, 0.5, 0.8, 0.5, 0.3);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ITEM_TOTEM_USE, 0.6f, 1.2f);
-                p.sendMessage(Text.literal("Наступна смертельна шкода буде відбита (30 с)").formatted(Formatting.GOLD));
+                p.sendMessage(Text.translatable("msg.standgen.revive_armed").formatted(Formatting.GOLD));
                 return true;
             }
         }
@@ -150,10 +166,10 @@ public final class Abilities {
     }
 
     private static boolean excavate(ServerPlayerEntity p, ServerWorld w, StandData d) {
-        double reach = 5 + d.range * 0.08;
+        double reach = armored(d) ? 5.0 : 5 + d.range * 0.08;
         HitResult hit = p.raycast(reach, 1.0f, false);
         if (hit.getType() != HitResult.Type.BLOCK) {
-            fail(p, "Немає блока, на який можна націлитись");
+            fail(p, "msg.standgen.fail_no_block");
             return false;
         }
         BlockPos c = ((BlockHitResult) hit).getBlockPos();
@@ -187,7 +203,7 @@ public final class Abilities {
             last = next;
         }
         if (last.squaredDistanceTo(start) < 1.0) {
-            fail(p, "Немає місця для ривка");
+            fail(p, "msg.standgen.fail_no_room");
             return false;
         }
         w.spawnParticles(ParticleTypes.CLOUD, start.x, start.y + 1, start.z, 25, 0.3, 0.5, 0.3, 0.05);
@@ -201,7 +217,7 @@ public final class Abilities {
     private static boolean pierce(ServerPlayerEntity p, ServerWorld w, StandData d) {
         Vec3d eye = p.getEyePos();
         Vec3d look = p.getRotationVec(1f);
-        double max = 25 + d.range * 0.3;
+        double max = armored(d) ? 4.5 : 25 + d.range * 0.3;
         float dmg = 4 + d.power * 0.12f + d.precision * 0.05f;
         Set<Entity> hit = new HashSet<>();
         for (double t = 1; t <= max; t += 0.5) {
@@ -223,8 +239,8 @@ public final class Abilities {
 
     // ---- форми ----
     private static boolean grab(ServerPlayerEntity p, ServerWorld w, StandData d) {
-        LivingEntity t = lookedEntity(w, p, 8 + d.range * 0.1);
-        if (t == null) { fail(p, "Немає цілі в полі зору"); return false; }
+        LivingEntity t = lookedEntity(w, p, armored(d) ? 3.5 : 8 + d.range * 0.1);
+        if (t == null) { fail(p, "msg.standgen.fail_no_target"); return false; }
         Vec3d pull = p.getPos().subtract(t.getPos());
         double len = pull.length();
         Vec3d v = len < 0.01 ? Vec3d.ZERO : pull.multiply(1.0 / len).multiply(Math.min(1.6, 0.4 + len * 0.15)).add(0, 0.25, 0);
@@ -321,7 +337,7 @@ public final class Abilities {
     }
 
     private static boolean arrowRain(ServerPlayerEntity p, ServerWorld w, StandData d) {
-        double reach = 30 + d.range * 0.2;
+        double reach = armored(d) ? 8.0 : 30 + d.range * 0.2;
         HitResult hr = p.raycast(reach, 1f, false);
         Vec3d center = hr.getType() == HitResult.Type.MISS
                 ? p.getEyePos().add(p.getRotationVec(1f).multiply(Math.min(reach, 18)))

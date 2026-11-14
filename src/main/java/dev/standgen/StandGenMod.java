@@ -2,6 +2,8 @@ package dev.standgen;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import dev.standgen.entity.StandEntity;
+import dev.standgen.item.StandArmorItem;
+import dev.standgen.item.StandArmorMaterial;
 import dev.standgen.item.StandArrowItem;
 import dev.standgen.stand.*;
 import net.fabricmc.api.ModInitializer;
@@ -23,6 +25,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SpawnGroup;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.loot.LootPool;
@@ -31,6 +34,7 @@ import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -54,6 +58,15 @@ public class StandGenMod implements ModInitializer {
 
     public static final Item STAND_ARROW = Registry.register(Registries.ITEM, id("stand_arrow"),
             new StandArrowItem(new FabricItemSettings().maxCount(16).rarity(Rarity.RARE)));
+
+    public static final Item STAND_HELMET = Registry.register(Registries.ITEM, id("stand_helmet"),
+            new StandArmorItem(StandArmorMaterial.INSTANCE, ArmorItem.Type.HELMET, new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_CHESTPLATE = Registry.register(Registries.ITEM, id("stand_chestplate"),
+            new StandArmorItem(StandArmorMaterial.INSTANCE, ArmorItem.Type.CHESTPLATE, new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_LEGGINGS = Registry.register(Registries.ITEM, id("stand_leggings"),
+            new StandArmorItem(StandArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_BOOTS = Registry.register(Registries.ITEM, id("stand_boots"),
+            new StandArmorItem(StandArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new FabricItemSettings().maxCount(1).fireproof()));
 
     public static final EntityType<StandEntity> STAND = Registry.register(Registries.ENTITY_TYPE, id("stand"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, StandEntity::new)
@@ -135,24 +148,26 @@ public class StandGenMod implements ModInitializer {
             if (entity instanceof ServerPlayerEntity target && source.getSource() != null
                     && source.getSource().getCommandTags().contains(StandArrowItem.TAG)
                     && StandManager.get(target.getServer()).get(target.getUuid()) == null) {
-                StandGenerator.awaken(target);
+                boolean ok = StandGenerator.awakenByArrow(target);
                 if (source.getAttacker() instanceof ServerPlayerEntity shooter && shooter != target) {
-                    shooter.sendMessage(Text.literal("Ти пробудив стенд у " + target.getName().getString())
-                            .formatted(Formatting.LIGHT_PURPLE), true);
+                    shooter.sendMessage(Text.translatable(ok ? "msg.standgen.shot_awakened" : "msg.standgen.shot_unworthy",
+                            target.getName()).formatted(Formatting.LIGHT_PURPLE), true);
                 }
+                if (!ok) return false;
             }
             return true;
         });
 
         // "Другий шанс": відбиває смертельну шкоду
         ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
-            if (entity instanceof ServerPlayerEntity p && StandRuntime.consumeRevive(p)) {
+            if (entity instanceof ServerPlayerEntity p && !source.isIn(DamageTypeTags.BYPASSES_INVULNERABILITY)
+                    && StandRuntime.consumeRevive(p)) {
                 p.setHealth(p.getMaxHealth() * 0.5f);
                 p.clearStatusEffects();
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 200, 1));
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 1));
                 p.getWorld().sendEntityStatus(p, (byte) 35);
-                p.sendMessage(Text.literal("Другий шанс спрацював!").formatted(Formatting.GOLD), true);
+                p.sendMessage(Text.translatable("msg.standgen.revive_used").formatted(Formatting.GOLD), true);
                 return false;
             }
             return true;
@@ -160,6 +175,7 @@ public class StandGenMod implements ModInitializer {
 
         // Еволюція: раз на 5 секунд перевіряємо прогрес
         ServerTickEvents.END_SERVER_TICK.register(server -> {
+            StandRuntime.tickArmor(server);
             if (server.getTicks() % 100 != 0) return;
             StandManager m = StandManager.get(server);
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
@@ -170,11 +186,12 @@ public class StandGenMod implements ModInitializer {
                     d.stage = ns;
                     d.recalc();
                     m.markDirty();
-                    p.sendMessage(Text.literal("✦ Твій стенд еволюціонував! Стадія " + ns + ": "
-                            + Progression.stageName(ns)).formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
+                    StandRuntime.refreshArmor(p, d);
+                    p.sendMessage(Text.translatable("msg.standgen.evolved", ns, Progression.stageText(ns))
+                            .formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
                     for (int slot = 1; slot < 4; slot++) {
                         if (d.unlockStage(slot) == ns) {
-                            p.sendMessage(Text.literal("Відкрилась здібність: " + d.skill(slot).title)
+                            p.sendMessage(Text.translatable("msg.standgen.skill_unlocked", d.skill(slot).text())
                                     .formatted(Formatting.GREEN));
                         }
                     }
@@ -182,7 +199,7 @@ public class StandGenMod implements ModInitializer {
             }
         });
 
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> StandRuntime.forget(handler.player.getUuid()));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> { StandRuntime.dismiss(handler.player); StandRuntime.forget(handler.player.getUuid()); });
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> StandRuntime.clear());
 
         // ---- команди ----
@@ -192,23 +209,24 @@ public class StandGenMod implements ModInitializer {
                             ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
                             StandData d = StandManager.get(ctx.getSource().getServer()).get(p.getUuid());
                             if (d == null) {
-                                ctx.getSource().sendFeedback(() -> Text.literal("У тебе ще немає стенда."), false);
+                                ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.no_stand"), false);
                                 return 0;
                             }
                             for (Text t : d.describe()) ctx.getSource().sendFeedback(() -> t, false);
-                            ctx.getSource().sendFeedback(() -> Text.literal(d.scoreLine()).formatted(Formatting.DARK_GRAY), false);
+                            ctx.getSource().sendFeedback(d::scoreLine, false);
                             return 1;
                         }))
                         .then(CommandManager.literal("awaken").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
-                            StandGenerator.awaken(ctx.getSource().getPlayerOrThrow());
+                            ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
+                            StandRuntime.dismiss(p);
+                            StandGenerator.awaken(p);
                             return 1;
                         }))
                         .then(CommandManager.literal("reset").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
                             ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
-                            StandEntity s = StandRuntime.getStand(p);
-                            if (s != null) s.discard();
+                            StandRuntime.dismiss(p);
                             StandManager.get(ctx.getSource().getServer()).remove(p.getUuid());
-                            ctx.getSource().sendFeedback(() -> Text.literal("Стенд скинуто."), false);
+                            ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.reset"), false);
                             return 1;
                         }))
                         // для тестування: /stand stage 0..8 (реальний прогрес може підняти стадію назад)
@@ -218,13 +236,14 @@ public class StandGenMod implements ModInitializer {
                                     StandManager m = StandManager.get(ctx.getSource().getServer());
                                     StandData d = m.get(p.getUuid());
                                     if (d == null) {
-                                        ctx.getSource().sendFeedback(() -> Text.literal("У тебе ще немає стенда."), false);
+                                        ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.no_stand"), false);
                                         return 0;
                                     }
                                     d.stage = IntegerArgumentType.getInteger(ctx, "n");
                                     d.recalc();
                                     m.markDirty();
-                                    ctx.getSource().sendFeedback(() -> Text.literal("Стадія: " + d.stage), false);
+                                    StandRuntime.refreshArmor(p, d);
+                                    ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.stage_set", d.stage), false);
                                     return 1;
                                 })))));
     }

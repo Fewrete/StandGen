@@ -1,36 +1,58 @@
-# StandGen 0.2.0 (Fabric 1.20.1)
+# StandGen 0.2.1 (Fabric 1.20.1)
 
-Стенди генеруються з дій гравця, мають форму (Гуманоїд / Броня / Зброя / Рій), 4 здібності і ростуть разом з прогресом у грі.
-Залежність: лише Fabric API.
+Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
+evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
 
+- Requires: **Fabric Loader** + **Fabric API** (the only dependency), Minecraft 1.20.1, Java 17.
+- Languages: English, Ukrainian (uk_ua), Russian (ru_ru), German (de_de).
 
-## Як отримати стенд
-- Крафт: Стріла + Алмаз + Золотий злиток (безформний).
-- Знайти: скрині храмів, пустельних пірамід, особняків, торгових кораблів, прихованих скарбів, фортець, міст Краю, давніх міст;
-  випадає з евокерів, свинолюдів-охоронців, великих вартових, рідко з візер-скелетів; рідкісний улов риболовлі.
-- Використати: утримувати ПКМ зі Стрілою ~1 секунду (стенд пробуджується, 2 серця шкоди).
-- Мультиплеєр: Стрілу можна вистрілити з лука або арбалета. Гравець, у якого вона влучила, пробуджує стенд.
-  Порада: стріла береться з лука як звичайна, тримай її в другій руці, якщо хочеш точно вистрілити саме нею.
+## Getting a stand
+- **Craft:** Arrow + Diamond + Gold Ingot (shapeless).
+- **Find:** chests in desert pyramids, jungle temples, pillager outposts, shipwrecks, buried treasure, woodland mansions, strongholds,
+  village temples, ruined portals, ancient cities, bastions and End cities. Also dropped by evokers, piglin brutes, elder guardians
+  and (rarely) wither skeletons, and found as rare fishing treasure.
+- **Use:** hold right-click with the Stand Arrow for about 1 second.
+  **There is a 0.1% chance you are unworthy: you die and get no stand** (disabled in hardcore and in creative; change it in `StandGenerator.UNWORTHY_CHANCE`).
+- **Multiplayer:** shoot the arrow from a bow or crossbow. The player it hits awakens a stand (same 0.1% risk).
+  The arrow is in the `minecraft:arrows` tag, so a bow may pick it from your inventory. Keep it in your off-hand to shoot it on purpose.
 
-## Керування (клавіші змінюються в налаштуваннях)
-- R виклик / прибрати стенд
-- G перемкнути АВТО / РУЧНЕ керування
-- Z (утримувати) атака в ручному режимі: стенд б'є туди, куди дивишся
-- X / C / V / B здібності: тип душі / додатковий тип (2 стадія) / форма (3 стадія) / ультимейт (4 стадія)
+## Controls
+All keys are rebindable: Options > Controls > Key Binds > **StandGen** (keyboard keys and mouse buttons).
+Defaults:
+| Key | Action |
+|---|---|
+| R | Summon / dismiss stand |
+| G | Toggle AUTO / MANUAL control |
+| Z (hold) | Manual attack: the stand punches where you look |
+| X / C / V / B | Skill 1 (soul type) / skill 2 (second type, stage 2) / skill 3 (form, stage 3) / skill 4 (ultimate, stage 4) |
 
-Авто-режим: стенд сам б'є ворогів поруч (радіус малий, крім Рою) і ціль, яку вдарив власник.
-Ручний: стенд нічого не робить сам, лише слідує; б'є, поки утримується Z.
+AUTO: the stand fights nearby hostile mobs by itself (small radius, except Swarm) and hits what you hit.
+MANUAL: the stand only follows you and attacks while Z is held.
 
-## Здібності
-Тип душі (слот 1 і 2): Шахтар Розкопка, Боєць Шквал ударів (кд 11.5 с), Будівельник Бастіон, Мандрівник Ривок, Стрілець Пронизуючий постріл, Вижилий Відродження.
-Форма (слот 3): Гуманоїд Хватка, Броня Броньована стіна, Зброя Метання зброї, Рій Вибух уламків.
-Ультимейт основного типу (слот 4): Землетрус, Режим люті, Цитадель, Зупинка часу, Дощ стріл, Другий шанс.
+## How it works
+- **Soul** = vanilla statistics (blocks mined, kills, blocks placed, distance travelled, bow use, deaths and damage taken).
+  This gives a main type and a second type: Miner, Fighter, Builder, Traveler, Archer, Survivor.
+- **Stage** = number of completed milestones (iron, diamonds, Nether, fortress, Wither, End, dragon, elytra). Higher stage means higher stats,
+  more skills and a more impressive look.
+- **Form** (chosen when you awaken, weighted by your soul): Humanoid (+precision), Armor (+durability), Weapon (+power), Swarm (+speed, range).
+  See "Armor form" below: it is worn by the player instead of being a separate figure.
+  Small details (horns, crest, spikes, lamp, halo, quiver...) depend on your type and a seed.
+- **16 skills:** 6 by type, 4 by form, 6 ultimates (one per main type).
 
-## Команди
-`/stand info`; для op: `/stand awaken`, `/stand reset`, `/stand stage 0..8` (для тесту здібностей).
+## Armor form
+The Armor stand is real armor worn on your body (all four slots), visible to everyone, tinted with your stand's colors.
+- It can only be summoned when **all four armor slots are empty**. While it is summoned you cannot take it off (curse of binding);
+  dismiss the stand with R to remove it. It disappears on death and when you leave the game.
+- It gives real armor points, toughness and knockback resistance (scaling with the stand's durability and stage),
+  and your own hits deal more damage (scaling with power).
+- It cannot hit from a distance. Auto mode: it strikes enemies right next to you (about 2.5 blocks). Manual mode: it strikes what you
+  look at, up to about 4 blocks, while Z is held. Barrage and Fury Mode are close-range combos.
+- Reworked for close range: Piercing Shot (4.5 blocks), Grab (3.5 blocks), Arrow Rain (falls within 8 blocks), Excavate (5 blocks).
 
-## Як це працює
-- Душа = ванільна статистика (копання, вбивства, будівництво, дистанція, лук, смерті/шкода).
-- Стадія = кількість виконаних віх (Progression.java). Росте стадія -> характеристики, вигляд, здібності.
-- Форма (StandForm): шанс залежить від душі. Деталі вигляду залежать від типу душі й сіду (гребінь, роги, шипи, лампа, німб, сагайдак...).
-- Інші моди: `StatCollector.register(...)` додає бали типам, `Progression.addMilestone(...)` додає віхи.
+## Commands
+`/stand info` shows your stand. For operators: `/stand awaken`, `/stand reset`, `/stand stage 0..8` (for testing skills).
+
+## For developers
+- `StatCollector.register(...)` lets other mods add soul scores. `Progression.addMilestone(...)` adds stage milestones.
+- All player-facing text is in `assets/standgen/lang/*.json`. To add a language, copy `en_us.json` and translate it.
+- New form: add a constant to `StandForm`, a model in `client/StandModels.java`, and a method in `client/StandRenderer.java`.

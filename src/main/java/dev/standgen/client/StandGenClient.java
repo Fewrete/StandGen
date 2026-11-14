@@ -5,6 +5,8 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -26,10 +28,17 @@ public class StandGenClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EntityModelLayerRegistry.registerModelLayer(StandModels.HUMANOID, StandModels::humanoid);
-        EntityModelLayerRegistry.registerModelLayer(StandModels.ARMORED, StandModels::armored);
+        EntityModelLayerRegistry.registerModelLayer(StandModels.WORN, StandModels::worn);
         EntityModelLayerRegistry.registerModelLayer(StandModels.WEAPON, StandModels::weapon);
         EntityModelLayerRegistry.registerModelLayer(StandModels.SWARM, StandModels::swarm);
         EntityRendererRegistry.register(StandGenMod.STAND, StandRenderer::new);
+
+        // броня-стенд: малюється на гравці й фарбується кольорами стенда (з NBT предмета)
+        ArmorRenderer.register(new StandArmorRenderer(), StandGenMod.STAND_HELMET, StandGenMod.STAND_CHESTPLATE,
+                StandGenMod.STAND_LEGGINGS, StandGenMod.STAND_BOOTS);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) ->
+                        stack.hasNbt() && stack.getNbt().contains("c1") ? stack.getNbt().getInt("c1") : 0xFFFFFF,
+                StandGenMod.STAND_HELMET, StandGenMod.STAND_CHESTPLATE, StandGenMod.STAND_LEGGINGS, StandGenMod.STAND_BOOTS);
 
         summon = key("key.standgen.summon", GLFW.GLFW_KEY_R);
         skill1 = key("key.standgen.skill1", GLFW.GLFW_KEY_X);

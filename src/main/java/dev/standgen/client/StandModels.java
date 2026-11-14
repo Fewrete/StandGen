@@ -1,6 +1,7 @@
 package dev.standgen.client;
 
 import dev.standgen.StandGenMod;
+import net.minecraft.client.model.Dilation;
 import net.minecraft.client.model.ModelData;
 import net.minecraft.client.model.ModelPartBuilder;
 import net.minecraft.client.model.ModelPartData;
@@ -11,7 +12,7 @@ import net.minecraft.client.render.entity.model.EntityModelLayer;
 /** Власні моделі стендів, зібрані з кубів у коді (без blockbench). */
 public final class StandModels {
     public static final EntityModelLayer HUMANOID = new EntityModelLayer(StandGenMod.id("stand_humanoid"), "main");
-    public static final EntityModelLayer ARMORED = new EntityModelLayer(StandGenMod.id("stand_armored"), "main");
+    public static final EntityModelLayer WORN = new EntityModelLayer(StandGenMod.id("stand_worn"), "main");
     public static final EntityModelLayer WEAPON = new EntityModelLayer(StandGenMod.id("stand_weapon"), "main");
     public static final EntityModelLayer SWARM = new EntityModelLayer(StandGenMod.id("stand_swarm"), "main");
     public static final int SHARDS = 24;
@@ -100,34 +101,44 @@ public final class StandModels {
         return TexturedModelData.of(md, 64, 64);
     }
 
-    /** Важкі лати: наплічники, нагрудник, шолом з гребенем і рогами, чоботи. */
-    public static TexturedModelData armored() {
+    /**
+     * Броня, яку гравець носить на собі (форма Броня). Частини повторюють скелет гравця, плити трохи більші за тіло.
+     * Основні плити фарбуються першим кольором, обладунок-оздоблення другим. Видимість частин вмикає StandArmorRenderer.
+     */
+    public static TexturedModelData worn() {
         ModelData md = new ModelData();
         ModelPartData root = md.getRoot();
+        Dilation big = new Dilation(0.7f), mid = new Dilation(0.45f), thin = new Dilation(0.25f);
 
-        ModelPartData head = root.addChild("head", b().uv(0, 0).cuboid(-4, -8, -4, 8, 8, 8), ModelTransform.pivot(0, 0, 0));
-        head.addChild("helmet", b().uv(0, 16).cuboid(-4.6f, -8.6f, -4.6f, 9.2f, 5f, 9.2f), N);
-        head.addChild("crest", b().uv(32, 0).cuboid(-0.5f, -12f, -5f, 1f, 4f, 10f), N);
-        head.addChild("horn_l", b().uv(0, 0).cuboid(3.5f, -12f, -1f, 1.5f, 5f, 1.5f), N);
-        head.addChild("horn_r", b().uv(0, 0).cuboid(-5f, -12f, -1f, 1.5f, 5f, 1.5f), N);
+        ModelPartData head = root.addChild("head", b(), ModelTransform.pivot(0, 0, 0));
+        head.addChild("helmet", b().uv(0, 16).cuboid(-4, -8, -4, 8, 8, 8, big), N);
+        head.addChild("visor", b().uv(0, 48).cuboid(-4.6f, -5.6f, -5.4f, 9.2f, 2.2f, 0.6f), N);
+        head.addChild("crest", b().uv(32, 0).cuboid(-0.5f, -12.5f, -5f, 1f, 4f, 10f), N);
+        head.addChild("horn_l", b().uv(0, 0).cuboid(4f, -12.5f, -1f, 1.5f, 5f, 1.5f), N);
+        head.addChild("horn_r", b().uv(0, 0).cuboid(-5.5f, -12.5f, -1f, 1.5f, 5f, 1.5f), N);
 
-        ModelPartData body = root.addChild("body", b().uv(16, 16).cuboid(-4, 0, -2, 8, 12, 4), ModelTransform.pivot(0, 0, 0));
-        body.addChild("chest", b().uv(16, 16).cuboid(-5f, 0.5f, -3.2f, 10f, 7f, 1.5f), N);
-        body.addChild("back", b().uv(16, 16).cuboid(-5f, 0.5f, 1.7f, 10f, 7f, 1.5f), N);
-        body.addChild("belt", b().uv(16, 16).cuboid(-4.5f, 9f, -2.5f, 9f, 2f, 5f), N);
-        body.addChild("emblem", b().uv(0, 52).cuboid(-1.5f, 2.5f, -3.8f, 3f, 3f, 0.6f), N);
+        ModelPartData body = root.addChild("body", b(), ModelTransform.pivot(0, 0, 0));
+        body.addChild("chest", b().uv(16, 16).cuboid(-4, 0, -2, 8, 12, 4, mid), N);
+        body.addChild("plate", b().uv(16, 16).cuboid(-5f, 0.5f, -3.6f, 10f, 7f, 1.4f), N);
+        body.addChild("back", b().uv(16, 16).cuboid(-5f, 0.5f, 2.2f, 10f, 7f, 1.4f), N);
+        body.addChild("emblem", b().uv(0, 52).cuboid(-1.5f, 2.5f, -4.2f, 3f, 3f, 0.6f), N);
+        body.addChild("belt", b().uv(16, 16).cuboid(-4.8f, 9f, -2.9f, 9.6f, 2.2f, 5.8f), N);
 
-        ModelPartData ra = root.addChild("right_arm", b().uv(40, 16).cuboid(-3, -2, -2, 4, 12, 4), ModelTransform.pivot(-5, 2, 0));
-        ra.addChild("pauldron", b().uv(40, 16).cuboid(-4.5f, -3.5f, -3f, 6f, 3f, 6f), N);
-        ra.addChild("gauntlet", b().uv(40, 16).cuboid(-3.5f, 6f, -2.5f, 5f, 4f, 5f), N);
-        ModelPartData la = root.addChild("left_arm", b().uv(40, 16).cuboid(-1, -2, -2, 4, 12, 4), ModelTransform.pivot(5, 2, 0));
-        la.addChild("pauldron", b().uv(40, 16).cuboid(-1.5f, -3.5f, -3f, 6f, 3f, 6f), N);
-        la.addChild("gauntlet", b().uv(40, 16).cuboid(-1.5f, 6f, -2.5f, 5f, 4f, 5f), N);
+        ModelPartData ra = root.addChild("right_arm", b(), ModelTransform.pivot(-5, 2, 0));
+        ra.addChild("sleeve", b().uv(40, 16).cuboid(-3, -2, -2, 4, 12, 4, thin), N);
+        ra.addChild("pauldron", b().uv(40, 16).cuboid(-4.8f, -3.8f, -3.2f, 6.4f, 3f, 6.4f), N);
+        ra.addChild("gauntlet", b().uv(40, 16).cuboid(-3.8f, 6f, -2.8f, 5.6f, 4.2f, 5.6f), N);
+        ModelPartData la = root.addChild("left_arm", b(), ModelTransform.pivot(5, 2, 0));
+        la.addChild("sleeve", b().uv(40, 16).cuboid(-1, -2, -2, 4, 12, 4, thin), N);
+        la.addChild("pauldron", b().uv(40, 16).cuboid(-1.6f, -3.8f, -3.2f, 6.4f, 3f, 6.4f), N);
+        la.addChild("gauntlet", b().uv(40, 16).cuboid(-1.8f, 6f, -2.8f, 5.6f, 4.2f, 5.6f), N);
 
-        ModelPartData rl = root.addChild("right_leg", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4), ModelTransform.pivot(-1.9f, 12, 0));
-        rl.addChild("boot", b().uv(0, 16).cuboid(-2.5f, 8f, -2.5f, 5f, 4f, 5.5f), N);
-        ModelPartData ll = root.addChild("left_leg", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4), ModelTransform.pivot(1.9f, 12, 0));
-        ll.addChild("boot", b().uv(0, 16).cuboid(-2.5f, 8f, -2.5f, 5f, 4f, 5.5f), N);
+        ModelPartData rl = root.addChild("right_leg", b(), ModelTransform.pivot(-1.9f, 12, 0));
+        rl.addChild("thigh", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4, thin), N);
+        rl.addChild("boot", b().uv(0, 16).cuboid(-2.7f, 7.6f, -2.9f, 5.4f, 4.6f, 5.8f), N);
+        ModelPartData ll = root.addChild("left_leg", b(), ModelTransform.pivot(1.9f, 12, 0));
+        ll.addChild("thigh", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4, thin), N);
+        ll.addChild("boot", b().uv(0, 16).cuboid(-2.7f, 7.6f, -2.9f, 5.4f, 4.6f, 5.8f), N);
 
         accessories(head, body, ra, la);
         return TexturedModelData.of(md, 64, 64);

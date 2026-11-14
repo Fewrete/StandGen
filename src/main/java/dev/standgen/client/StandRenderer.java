@@ -28,12 +28,11 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         for (int i = 0; i < ORB_NAMES.length; i++) ORB_NAMES[i] = "orb" + i;
     }
 
-    private final ModelPart humanoid, armored, weapon, swarm;
+    private final ModelPart humanoid, weapon, swarm;
 
     public StandRenderer(EntityRendererFactory.Context ctx) {
         super(ctx);
         this.humanoid = ctx.getPart(StandModels.HUMANOID);
-        this.armored = ctx.getPart(StandModels.ARMORED);
         this.weapon = ctx.getPart(StandModels.WEAPON);
         this.swarm = ctx.getPart(StandModels.SWARM);
     }
@@ -62,12 +61,6 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         m.scale(-1.0f, -1.0f, 1.0f);
 
         switch (e.getForm()) {
-            case ARMORED -> {
-                float sx = e.getBulk() * 1.1f;
-                m.scale(sx, e.getHeightScale() * 1.05f, sx);
-                m.translate(0.0f, -1.501f, 0.0f);
-                renderBiped(armored, e, age, headYaw, pitch, m, vc, l, c1, c2, stage);
-            }
             case WEAPON -> {
                 float k = e.getHeightScale() * 0.8f + stage * 0.03f;
                 m.scale(k, k, k);
