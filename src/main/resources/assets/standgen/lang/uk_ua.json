@@ -3,6 +3,10 @@
   "entity.standgen.stand": "Стенд",
   "key.categories.standgen": "StandGen",
   "key.standgen.summon": "Викликати / прибрати стенд",
-  "key.standgen.ability1": "Здібність стенда 1",
-  "key.standgen.ability2": "Здібність стенда 2"
+  "key.standgen.skill1": "Здібність стенда 1 (тип)",
+  "key.standgen.skill2": "Здібність стенда 2 (додатковий тип)",
+  "key.standgen.skill3": "Здібність стенда 3 (форма)",
+  "key.standgen.skill4": "Здібність стенда 4 (ультимейт)",
+  "key.standgen.mode": "Перемкнути авто / ручне керування",
+  "key.standgen.attack": "Ручна атака (утримувати)"
 }

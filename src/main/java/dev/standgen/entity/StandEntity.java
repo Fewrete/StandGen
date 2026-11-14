@@ -2,9 +2,11 @@ package dev.standgen.entity;
 
 import dev.standgen.stand.Abilities;
 import dev.standgen.stand.Archetype;
-import dev.standgen.stand.StandForm;
 import dev.standgen.stand.StandData;
+import dev.standgen.stand.StandForm;
 import dev.standgen.stand.StandManager;
+import dev.standgen.stand.StandRuntime;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -13,11 +15,11 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -108,6 +110,17 @@ public class StandEntity extends LivingEntity {
         this.hitCooldown = 0;
     }
 
+    private static ParticleEffect ambient(Archetype a) {
+        return switch (a) {
+            case MINER -> ParticleTypes.ASH;
+            case FIGHTER -> ParticleTypes.CRIT;
+            case BUILDER -> ParticleTypes.ENCHANT;
+            case RUNNER -> ParticleTypes.CLOUD;
+            case ARCHER -> ParticleTypes.END_ROD;
+            case SURVIVOR -> ParticleTypes.HAPPY_VILLAGER;
+        };
+    }
+
     @Override
     public void tick() {
         super.tick();
@@ -125,17 +138,35 @@ public class StandEntity extends LivingEntity {
         if (age % 20 == 0) applyData(d);
         if (age % 40 == 0) Abilities.applyPassive(owner, d);
 
+        int now = w.getServer().getTicks();
+        boolean manual = StandRuntime.isManual(ownerId);
+        boolean holding = manual && StandRuntime.isHolding(ownerId, now);
+        boolean swarm = d.form == StandForm.SWARM;
+        double fullLeash = d.leash();
+        // в авто-режимі стенд тримається ближче до власника (крім Рою)
+        double autoLeash = swarm ? fullLeash : Math.min(fullLeash, 4.5 + d.range * 0.03);
+        double aggro = swarm ? 4.0 + d.range * 0.06 : 3.0 + d.range * 0.02;
+        double reach = 2.5 + d.range * 0.04;
+
         // ---- цілі ----
-        double leash = d.leash();
-        if (target != null && (!target.isAlive() || target.getWorld() != w
-                || target.squaredDistanceTo(owner) > leash * leash || --targetTimeout <= 0)) {
-            target = null;
-        }
-        if (target == null && (barrageTicks > 0 || age % 5 == 0)) {
-            LivingEntity found = findTarget(w, owner, barrageTicks > 0 ? leash : 4.0);
-            if (found != null) {
-                target = found;
-                targetTimeout = 40;
+        if (holding) {
+            target = Abilities.lookedEntity(w, owner, reach);
+            targetTimeout = 10;
+        } else {
+            double maxDist = (manual || barrageTicks > 0) ? fullLeash : autoLeash;
+            if (target != null && (!target.isAlive() || target.getWorld() != w
+                    || target.squaredDistanceTo(owner) > maxDist * maxDist || --targetTimeout <= 0)) {
+                target = null;
+            }
+            if (target == null) {
+                if (barrageTicks > 0) {
+                    LivingEntity looked = Abilities.lookedEntity(w, owner, fullLeash);
+                    target = looked != null ? looked : findTarget(w, owner, fullLeash);
+                    targetTimeout = 40;
+                } else if (!manual && age % 5 == 0) {
+                    target = findTarget(w, owner, aggro);
+                    targetTimeout = 40;
+                }
             }
         }
 
@@ -151,6 +182,10 @@ public class StandEntity extends LivingEntity {
             goal = tp.subtract(dir.multiply(1.1)).add(0, 0.1, 0);
             faceYaw = (float) Math.toDegrees(Math.atan2(-(tp.x - getX()), tp.z - getZ()));
             lerp = 0.6;
+        } else if (holding) {
+            Vec3d aim = owner.getEyePos().add(owner.getRotationVec(1f).multiply(Math.min(reach, 2.4)));
+            goal = new Vec3d(aim.x, aim.y - 1.0, aim.z);
+            lerp = 0.6;
         } else {
             float yawRad = owner.getBodyYaw() * 0.017453292f;
             Vec3d fwd = new Vec3d(-MathHelper.sin(yawRad), 0, MathHelper.cos(yawRad));
@@ -159,7 +194,8 @@ public class StandEntity extends LivingEntity {
                     .add(0, 0.35 + Math.sin(age * 0.12) * 0.08, 0);
         }
         Vec3d np = getPos().lerp(goal, lerp);
-        if (np.squaredDistanceTo(owner.getPos()) > (leash + 10) * (leash + 10)) np = goal;
+        double far = fullLeash + 10;
+        if (np.squaredDistanceTo(owner.getPos()) > far * far) np = goal;
         setPosition(np.x, np.y, np.z);
         float ny = MathHelper.lerpAngleDegrees(0.4f, getYaw(), faceYaw);
         setYaw(ny);
@@ -168,7 +204,7 @@ public class StandEntity extends LivingEntity {
 
         // ---- атака ----
         boolean fighting = target != null && squaredDistanceTo(target) < 9.0;
-        dataTracker.set(ATTACKING, fighting);
+        dataTracker.set(ATTACKING, fighting || holding);
         if (hitCooldown > 0) hitCooldown--;
         if (fighting && hitCooldown <= 0) {
             boolean barrage = barrageTicks > 0;
@@ -184,8 +220,11 @@ public class StandEntity extends LivingEntity {
         }
         if (barrageTicks > 0) barrageTicks--;
 
-        // слід від стадії 3+
-        if (d.stage >= 3 && age % 3 == 0) {
+        // ---- візуальні деталі: ефект від типу душі, слід зі стадії 3 ----
+        if (d.stage >= 1 && age % 8 == 0) {
+            w.spawnParticles(ambient(d.primary), getX(), getY() + 1.0, getZ(), 1, 0.25, 0.4, 0.25, 0.01);
+        }
+        if (d.stage >= 3 && age % 6 == 0) {
             w.spawnParticles(ParticleTypes.END_ROD, getX(), getY() + 1.0, getZ(), 1, 0.2, 0.4, 0.2, 0.0);
         }
     }
@@ -197,7 +236,7 @@ public class StandEntity extends LivingEntity {
         for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, box,
                 x -> x instanceof Monster && !(x instanceof EndermanEntity) && x.isAlive())) {
             double dd = e.squaredDistanceTo(owner);
-            if (dd < bd) { bd = dd; best = e; }
+            if (dd < bd && dd <= radius * radius) { bd = dd; best = e; }
         }
         return best;
     }

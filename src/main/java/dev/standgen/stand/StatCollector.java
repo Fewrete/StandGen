@@ -51,7 +51,7 @@ public final class StatCollector {
         long jumps = c(h, Stats.JUMP);
 
         float[] s = new float[Archetype.COUNT];
-        s[Archetype.MINER.ordinal()] = mined / 3000f;
+        s[Archetype.MINER.ordinal()] = mined / 6000f;
         s[Archetype.FIGHTER.ordinal()] = (float) (kills / 150.0 * 0.6 + dealt / 4000.0 * 0.4);
         s[Archetype.BUILDER.ordinal()] = placed / 2500f;
         s[Archetype.RUNNER.ordinal()] = (float) (meters / 60000.0 * 0.85 + jumps / 8000.0 * 0.15);

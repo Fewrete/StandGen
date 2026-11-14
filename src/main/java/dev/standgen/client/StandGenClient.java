@@ -14,27 +14,51 @@ import net.minecraft.network.PacketByteBuf;
 import org.lwjgl.glfw.GLFW;
 
 public class StandGenClient implements ClientModInitializer {
-    private static KeyBinding summon, ability1, ability2;
+    private static final String CAT = "key.categories.standgen";
+    private static KeyBinding summon, skill1, skill2, skill3, skill4, mode, hold;
+    private static boolean holdDown;
+    private static int holdTicks;
+
+    private static KeyBinding key(String name, int code) {
+        return KeyBindingHelper.registerKeyBinding(new KeyBinding(name, InputUtil.Type.KEYSYM, code, CAT));
+    }
 
     @Override
     public void onInitializeClient() {
+        EntityModelLayerRegistry.registerModelLayer(StandModels.HUMANOID, StandModels::humanoid);
         EntityModelLayerRegistry.registerModelLayer(StandModels.ARMORED, StandModels::armored);
         EntityModelLayerRegistry.registerModelLayer(StandModels.WEAPON, StandModels::weapon);
         EntityModelLayerRegistry.registerModelLayer(StandModels.SWARM, StandModels::swarm);
         EntityRendererRegistry.register(StandGenMod.STAND, StandRenderer::new);
 
-        summon = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.standgen.summon",
-                InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_R, "key.categories.standgen"));
-        ability1 = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.standgen.ability1",
-                InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_X, "key.categories.standgen"));
-        ability2 = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.standgen.ability2",
-                InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_C, "key.categories.standgen"));
+        summon = key("key.standgen.summon", GLFW.GLFW_KEY_R);
+        skill1 = key("key.standgen.skill1", GLFW.GLFW_KEY_X);
+        skill2 = key("key.standgen.skill2", GLFW.GLFW_KEY_C);
+        skill3 = key("key.standgen.skill3", GLFW.GLFW_KEY_V);
+        skill4 = key("key.standgen.skill4", GLFW.GLFW_KEY_B);
+        mode = key("key.standgen.mode", GLFW.GLFW_KEY_G);
+        hold = key("key.standgen.attack", GLFW.GLFW_KEY_Z);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
-            while (summon.wasPressed()) send(0);
-            while (ability1.wasPressed()) send(1);
-            while (ability2.wasPressed()) send(2);
+            while (summon.wasPressed()) send(StandGenMod.ACT_SUMMON);
+            while (skill1.wasPressed()) send(StandGenMod.ACT_SKILL1);
+            while (skill2.wasPressed()) send(StandGenMod.ACT_SKILL2);
+            while (skill3.wasPressed()) send(StandGenMod.ACT_SKILL3);
+            while (skill4.wasPressed()) send(StandGenMod.ACT_SKILL4);
+            while (mode.wasPressed()) send(StandGenMod.ACT_MODE);
+
+            // ручна атака: утримувати; пінг кожні ~0.75 с, щоб сервер не скинув стан
+            boolean down = hold.isPressed();
+            if (down) {
+                if (!holdDown || ++holdTicks >= 15) {
+                    send(StandGenMod.ACT_HOLD_ON);
+                    holdTicks = 0;
+                }
+            } else if (holdDown) {
+                send(StandGenMod.ACT_HOLD_OFF);
+            }
+            holdDown = down;
         });
     }
 

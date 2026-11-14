@@ -80,6 +80,18 @@ public class StandData {
 
     private static float frac(float h) { return h - (float) Math.floor(h); }
 
+    // Здібності за слотами: 0 основний тип, 1 додатковий тип, 2 форма, 3 ультимейт
+    public Skill skill(int slot) {
+        return switch (slot) {
+            case 0 -> Skill.of(primary);
+            case 1 -> Skill.of(secondary);
+            case 2 -> Skill.form(form);
+            default -> Skill.ultimate(primary);
+        };
+    }
+
+    public int unlockStage(int slot) { return Skill.UNLOCK[slot]; }
+
     // Боєві значення
     public float standDamage() { return 1.5f + power * 0.03f; }
     public float leash() { return 5f + range * 0.12f; }
@@ -100,9 +112,12 @@ public class StandData {
         l.add(Text.literal("Дальність " + rank(range) + " (" + range + ")  Стійкість " + rank(durability)
                 + " (" + durability + ")  Точність " + rank(precision) + " (" + precision + ")")
                 .formatted(Formatting.WHITE));
-        l.add(Text.literal("Здібність 1: " + primary.abilityName).formatted(Formatting.GREEN));
-        l.add(Text.literal("Здібність 2: " + secondary.abilityName + (stage < 2 ? " (з 2 стадії)" : ""))
-                .formatted(stage < 2 ? Formatting.GRAY : Formatting.GREEN));
+        String[] keys = {"X", "C", "V", "B"};
+        for (int i = 0; i < 4; i++) {
+            boolean open = stage >= unlockStage(i);
+            l.add(Text.literal("[" + keys[i] + "] " + skill(i).title + (open ? "" : " (з " + unlockStage(i) + " стадії)"))
+                    .formatted(open ? Formatting.GREEN : Formatting.GRAY));
+        }
         return l;
     }
 

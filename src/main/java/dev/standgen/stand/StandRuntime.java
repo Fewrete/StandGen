@@ -9,17 +9,28 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
-/** Тимчасовий стан: хто викликав стенд, перезарядки. */
+/** Тимчасовий стан: хто викликав стенд, перезарядки, режим керування, "другий шанс". */
 public final class StandRuntime {
     private static final Map<UUID, UUID> ACTIVE = new HashMap<>();
     private static final Map<UUID, int[]> COOLDOWN = new HashMap<>();
+    private static final Set<UUID> MANUAL = new HashSet<>();
+    private static final Map<UUID, Integer> HOLD = new HashMap<>();    // до якого тіка діє утримання атаки
+    private static final Map<UUID, Integer> REVIVE = new HashMap<>();  // до якого тіка діє "другий шанс"
 
     private StandRuntime() {}
 
-    public static void clear() { ACTIVE.clear(); COOLDOWN.clear(); }
+    public static void clear() {
+        ACTIVE.clear(); COOLDOWN.clear(); MANUAL.clear(); HOLD.clear(); REVIVE.clear();
+    }
+
+    public static void forget(UUID id) {
+        ACTIVE.remove(id); COOLDOWN.remove(id); MANUAL.remove(id); HOLD.remove(id); REVIVE.remove(id);
+    }
 
     public static StandEntity getStand(ServerPlayerEntity p) {
         UUID id = ACTIVE.get(p.getUuid());
@@ -34,6 +45,40 @@ public final class StandRuntime {
         p.sendMessage(Text.literal(s).formatted(f), true);
     }
 
+    // ---- режими керування ----
+    public static boolean isManual(UUID id) { return MANUAL.contains(id); }
+
+    public static boolean isHolding(UUID id, int nowTick) {
+        Integer t = HOLD.get(id);
+        return t != null && nowTick <= t;
+    }
+
+    public static void setHold(ServerPlayerEntity p, boolean down) {
+        if (down) HOLD.put(p.getUuid(), p.getServer().getTicks() + 40);
+        else HOLD.remove(p.getUuid());
+    }
+
+    public static void toggleManual(ServerPlayerEntity p) {
+        UUID id = p.getUuid();
+        boolean nowManual = !MANUAL.contains(id);
+        if (nowManual) MANUAL.add(id);
+        else { MANUAL.remove(id); HOLD.remove(id); }
+        msg(p, nowManual ? "Стенд: РУЧНЕ керування (утримуй клавішу атаки)" : "Стенд: АВТОМАТИЧНИЙ режим", Formatting.AQUA);
+    }
+
+    // ---- "Другий шанс" ----
+    public static void armRevive(ServerPlayerEntity p) { REVIVE.put(p.getUuid(), p.getServer().getTicks() + 600); }
+
+    public static boolean consumeRevive(ServerPlayerEntity p) {
+        Integer t = REVIVE.get(p.getUuid());
+        if (t != null && p.getServer().getTicks() <= t) {
+            REVIVE.remove(p.getUuid());
+            return true;
+        }
+        return false;
+    }
+
+    // ---- виклик і здібності ----
     public static void toggle(ServerPlayerEntity p) {
         StandData d = StandManager.get(p.getServer()).get(p.getUuid());
         if (d == null) {
@@ -62,18 +107,20 @@ public final class StandRuntime {
         if (d == null) { msg(p, "У тебе ще немає стенда", Formatting.RED); return; }
         StandEntity s = getStand(p);
         if (s == null) { msg(p, "Спочатку виклич стенд", Formatting.RED); return; }
-        if (slot == 1 && d.stage < 2) { msg(p, "Друга здібність відкриється на 2 стадії", Formatting.RED); return; }
-
-        Archetype a = slot == 0 ? d.primary : d.secondary;
-        int[] cd = COOLDOWN.computeIfAbsent(p.getUuid(), k -> new int[2]);
-        int now = p.getServer().getTicks();
-        if (now < cd[slot]) {
-            msg(p, "Перезарядка: " + ((cd[slot] - now) / 20 + 1) + " с", Formatting.RED);
+        if (d.stage < d.unlockStage(slot)) {
+            msg(p, "Ця здібність відкриється на " + d.unlockStage(slot) + " стадії", Formatting.RED);
             return;
         }
-        if (Abilities.execute(a, p, s, d)) {
-            cd[slot] = now + Abilities.cooldown(a, d);
-            msg(p, a.abilityName + "!", Formatting.LIGHT_PURPLE);
+        Skill sk = d.skill(slot);
+        int[] cd = COOLDOWN.computeIfAbsent(p.getUuid(), k -> new int[4]);
+        int now = p.getServer().getTicks();
+        if (now < cd[slot]) {
+            msg(p, sk.title + ": перезарядка " + ((cd[slot] - now) / 20 + 1) + " с", Formatting.RED);
+            return;
+        }
+        if (Abilities.execute(sk, p, s, d)) {
+            cd[slot] = now + Abilities.cooldown(sk, d);
+            msg(p, sk.title + "!", Formatting.LIGHT_PURPLE);
         }
     }
 }
