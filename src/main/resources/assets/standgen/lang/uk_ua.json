@@ -1,7 +1,6 @@
 {
   "item.standgen.stand_arrow": "Стріла Стенда",
   "item.standgen.stand_arrow.tooltip1": "Утримуй ПКМ 1 секунду, щоб пробудити стенд.",
-  "item.standgen.stand_arrow.tooltip2": "%s шанс померти, якщо ти недостойний (не в хардкорі).",
   "item.standgen.stand_arrow.tooltip3": "Вистрель з лука в гравця, щоб пробудити стенд у нього.",
   "entity.standgen.stand": "Стенд",
   "key.categories.standgen": "StandGen",

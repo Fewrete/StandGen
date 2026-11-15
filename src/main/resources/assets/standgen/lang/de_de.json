@@ -1,7 +1,6 @@
 {
   "item.standgen.stand_arrow": "Stand-Pfeil",
   "item.standgen.stand_arrow.tooltip1": "Halte die rechte Maustaste 1 Sekunde gedrückt, um deinen Stand zu erwecken.",
-  "item.standgen.stand_arrow.tooltip2": "%s Chance zu sterben, falls unwürdig (nicht im Hardcore).",
   "item.standgen.stand_arrow.tooltip3": "Schieße mit einem Bogen auf einen Spieler, um dessen Stand zu erwecken.",
   "entity.standgen.stand": "Stand",
   "key.categories.standgen": "StandGen",

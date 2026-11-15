@@ -45,8 +45,6 @@ public class StandArrowItem extends ArrowItem {
     @Override
     public void appendTooltip(ItemStack stack, World world, List<Text> tooltip, TooltipContext context) {
         tooltip.add(Text.translatable("item.standgen.stand_arrow.tooltip1").formatted(Formatting.GRAY));
-        tooltip.add(Text.translatable("item.standgen.stand_arrow.tooltip2",
-                String.format(java.util.Locale.ROOT, "%.1f%%", StandGenerator.UNWORTHY_CHANCE * 100)).formatted(Formatting.DARK_RED));
         tooltip.add(Text.translatable("item.standgen.stand_arrow.tooltip3").formatted(Formatting.GRAY));
     }
 

@@ -12,8 +12,7 @@ evolves together with your progress through the game. Inspired by the "stand" id
   village temples, ruined portals, ancient cities, bastions and End cities. Also dropped by evokers, piglin brutes, elder guardians
   and (rarely) wither skeletons, and found as rare fishing treasure.
 - **Use:** hold right-click with the Stand Arrow for about 1 second.
-  **There is a 0.1% chance you are unworthy: you die and get no stand** (disabled in hardcore and in creative; change it in `StandGenerator.UNWORTHY_CHANCE`).
-- **Multiplayer:** shoot the arrow from a bow or crossbow. The player it hits awakens a stand (same 0.1% risk).
+- **Multiplayer:** shoot the arrow from a bow or crossbow. The player it hits awakens a stand.
   The arrow is in the `minecraft:arrows` tag, so a bow may pick it from your inventory. Keep it in your off-hand to shoot it on purpose.
 
 ## Controls

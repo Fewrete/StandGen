@@ -102,46 +102,84 @@ public final class StandModels {
     }
 
     /**
-     * Броня, яку гравець носить на собі (форма Броня). Частини повторюють скелет гравця, плити трохи більші за тіло.
-     * Основні плити фарбуються першим кольором, обладунок-оздоблення другим. Видимість частин вмикає StandArmorRenderer.
+     * Броня, яку гравець носить на собі (форма Броня). Частини повторюють скелет гравця.
+     * Розміри плит як у ванільної броні (1.0 для шолома, нагрудника й чобіт, 0.5 для поножів), щоб вони лежали
+     * ЗВЕРХУ шарів скіна, зокрема й 3D-шарів модів на кшталт 3D Skin Layers, і не мерехтіли разом з ними.
+     * Основні плити фарбуються першим кольором, оздоблення другим. Видимість частин вмикає StandArmorRenderer.
      */
     public static TexturedModelData worn() {
         ModelData md = new ModelData();
         ModelPartData root = md.getRoot();
-        Dilation big = new Dilation(0.7f), mid = new Dilation(0.45f), thin = new Dilation(0.25f);
+        Dilation outer = new Dilation(1.0f), inner = new Dilation(0.5f);
 
         ModelPartData head = root.addChild("head", b(), ModelTransform.pivot(0, 0, 0));
-        head.addChild("helmet", b().uv(0, 16).cuboid(-4, -8, -4, 8, 8, 8, big), N);
-        head.addChild("visor", b().uv(0, 48).cuboid(-4.6f, -5.6f, -5.4f, 9.2f, 2.2f, 0.6f), N);
+        head.addChild("helmet", b().uv(0, 16).cuboid(-4, -8, -4, 8, 8, 8, outer), N);
+        head.addChild("visor", b().uv(0, 48).cuboid(-4.6f, -5.6f, -5.6f, 9.2f, 2.2f, 0.7f), N);
         head.addChild("crest", b().uv(32, 0).cuboid(-0.5f, -12.5f, -5f, 1f, 4f, 10f), N);
-        head.addChild("horn_l", b().uv(0, 0).cuboid(4f, -12.5f, -1f, 1.5f, 5f, 1.5f), N);
-        head.addChild("horn_r", b().uv(0, 0).cuboid(-5.5f, -12.5f, -1f, 1.5f, 5f, 1.5f), N);
+        head.addChild("horn_l", b().uv(0, 0).cuboid(4.6f, -12.5f, -1f, 1.5f, 5f, 1.5f), N);
+        head.addChild("horn_r", b().uv(0, 0).cuboid(-6.1f, -12.5f, -1f, 1.5f, 5f, 1.5f), N);
 
         ModelPartData body = root.addChild("body", b(), ModelTransform.pivot(0, 0, 0));
-        body.addChild("chest", b().uv(16, 16).cuboid(-4, 0, -2, 8, 12, 4, mid), N);
-        body.addChild("plate", b().uv(16, 16).cuboid(-5f, 0.5f, -3.6f, 10f, 7f, 1.4f), N);
-        body.addChild("back", b().uv(16, 16).cuboid(-5f, 0.5f, 2.2f, 10f, 7f, 1.4f), N);
-        body.addChild("emblem", b().uv(0, 52).cuboid(-1.5f, 2.5f, -4.2f, 3f, 3f, 0.6f), N);
-        body.addChild("belt", b().uv(16, 16).cuboid(-4.8f, 9f, -2.9f, 9.6f, 2.2f, 5.8f), N);
+        body.addChild("chest", b().uv(16, 16).cuboid(-4, 0, -2, 8, 12, 4, outer), N);
+        body.addChild("plate", b().uv(16, 16).cuboid(-5.8f, 0.5f, -4.0f, 11.6f, 7f, 1.4f), N);
+        body.addChild("back", b().uv(16, 16).cuboid(-5.8f, 0.5f, 2.6f, 11.6f, 7f, 1.4f), N);
+        body.addChild("emblem", b().uv(0, 52).cuboid(-1.5f, 2.5f, -4.6f, 3f, 3f, 0.6f), N);
+        body.addChild("belt", b().uv(16, 16).cuboid(-5.4f, 9f, -3.4f, 10.8f, 2.2f, 6.8f), N);
 
         ModelPartData ra = root.addChild("right_arm", b(), ModelTransform.pivot(-5, 2, 0));
-        ra.addChild("sleeve", b().uv(40, 16).cuboid(-3, -2, -2, 4, 12, 4, thin), N);
-        ra.addChild("pauldron", b().uv(40, 16).cuboid(-4.8f, -3.8f, -3.2f, 6.4f, 3f, 6.4f), N);
-        ra.addChild("gauntlet", b().uv(40, 16).cuboid(-3.8f, 6f, -2.8f, 5.6f, 4.2f, 5.6f), N);
+        ra.addChild("sleeve", b().uv(40, 16).cuboid(-3, -2, -2, 4, 12, 4, outer), N);
+        ra.addChild("pauldron", b().uv(40, 16).cuboid(-5f, -4.6f, -3.8f, 7.6f, 3.4f, 7.6f), N);
+        ra.addChild("gauntlet", b().uv(40, 16).cuboid(-4.6f, 5.5f, -3.6f, 7.2f, 4.6f, 7.2f), N);
         ModelPartData la = root.addChild("left_arm", b(), ModelTransform.pivot(5, 2, 0));
-        la.addChild("sleeve", b().uv(40, 16).cuboid(-1, -2, -2, 4, 12, 4, thin), N);
-        la.addChild("pauldron", b().uv(40, 16).cuboid(-1.6f, -3.8f, -3.2f, 6.4f, 3f, 6.4f), N);
-        la.addChild("gauntlet", b().uv(40, 16).cuboid(-1.8f, 6f, -2.8f, 5.6f, 4.2f, 5.6f), N);
+        la.addChild("sleeve", b().uv(40, 16).cuboid(-1, -2, -2, 4, 12, 4, outer), N);
+        la.addChild("pauldron", b().uv(40, 16).cuboid(-2.6f, -4.6f, -3.8f, 7.6f, 3.4f, 7.6f), N);
+        la.addChild("gauntlet", b().uv(40, 16).cuboid(-2.6f, 5.5f, -3.6f, 7.2f, 4.6f, 7.2f), N);
 
         ModelPartData rl = root.addChild("right_leg", b(), ModelTransform.pivot(-1.9f, 12, 0));
-        rl.addChild("thigh", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4, thin), N);
-        rl.addChild("boot", b().uv(0, 16).cuboid(-2.7f, 7.6f, -2.9f, 5.4f, 4.6f, 5.8f), N);
+        rl.addChild("thigh", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4, inner), N);
+        rl.addChild("boot", b().uv(0, 16).cuboid(-2, 8, -2, 4, 4, 4, outer), N);
         ModelPartData ll = root.addChild("left_leg", b(), ModelTransform.pivot(1.9f, 12, 0));
-        ll.addChild("thigh", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4, thin), N);
-        ll.addChild("boot", b().uv(0, 16).cuboid(-2.7f, 7.6f, -2.9f, 5.4f, 4.6f, 5.8f), N);
+        ll.addChild("thigh", b().uv(0, 16).cuboid(-2, 0, -2, 4, 12, 4, inner), N);
+        ll.addChild("boot", b().uv(0, 16).cuboid(-2, 8, -2, 4, 4, 4, outer), N);
 
-        accessories(head, body, ra, la);
+        wornAccessories(head, body, ra, la);
         return TexturedModelData.of(md, 64, 64);
+    }
+
+    /** Прикраси за типом душі для броні: усі винесені назовні від великих плит. Імена ті самі, що в accessories(). */
+    private static void wornAccessories(ModelPartData head, ModelPartData body, ModelPartData ra, ModelPartData la) {
+        ModelPartData miner = head.addChild("acc_miner", b(), N);
+        miner.addChild("band", b().uv(32, 0).cuboid(-5.4f, -9.4f, -5.4f, 10.8f, 1.2f, 10.8f), N);
+        miner.addChild("lamp", b().uv(32, 0).cuboid(-1.5f, -8.8f, -6.2f, 3f, 2.5f, 1.4f), N);
+
+        ModelPartData surv = head.addChild("acc_survivor", b(), N);
+        surv.addChild("halo_f", b().uv(32, 0).cuboid(-6f, -14f, -6f, 12f, 0.8f, 1.2f), N);
+        surv.addChild("halo_b", b().uv(32, 0).cuboid(-6f, -14f, 4.8f, 12f, 0.8f, 1.2f), N);
+        surv.addChild("halo_l", b().uv(32, 0).cuboid(-6f, -14f, -4.8f, 1.2f, 0.8f, 9.6f), N);
+        surv.addChild("halo_r", b().uv(32, 0).cuboid(4.8f, -14f, -4.8f, 1.2f, 0.8f, 9.6f), N);
+
+        ModelPartData fr = ra.addChild("acc_fighter", b(), N);
+        fr.addChild("s1", b().uv(40, 16).cuboid(-3.8f, 6.5f, -4.8f, 1f, 1f, 1.4f), N);
+        fr.addChild("s2", b().uv(40, 16).cuboid(-1.8f, 6.5f, -4.8f, 1f, 1f, 1.4f), N);
+        fr.addChild("s3", b().uv(40, 16).cuboid(0.2f, 6.5f, -4.8f, 1f, 1f, 1.4f), N);
+        ModelPartData fl = la.addChild("acc_fighter", b(), N);
+        fl.addChild("s1", b().uv(40, 16).cuboid(-1.2f, 6.5f, -4.8f, 1f, 1f, 1.4f), N);
+        fl.addChild("s2", b().uv(40, 16).cuboid(0.8f, 6.5f, -4.8f, 1f, 1f, 1.4f), N);
+        fl.addChild("s3", b().uv(40, 16).cuboid(2.8f, 6.5f, -4.8f, 1f, 1f, 1.4f), N);
+
+        ModelPartData bld = body.addChild("acc_builder", b(), N);
+        bld.addChild("pouch_l", b().uv(16, 16).cuboid(-5.4f, 9.2f, -4.4f, 3.4f, 3.4f, 1.8f), N);
+        bld.addChild("pouch_r", b().uv(16, 16).cuboid(2f, 9.2f, -4.4f, 3.4f, 3.4f, 1.8f), N);
+
+        ModelPartData run = body.addChild("acc_runner", b(), N);
+        run.addChild("fin_l", b().uv(32, 0).cuboid(-0.5f, -1f, 0f, 1f, 9f, 6f), ModelTransform.of(-4f, 2f, 3.2f, 0.4f, 0f, -0.3f));
+        run.addChild("fin_r", b().uv(32, 0).cuboid(-0.5f, -1f, 0f, 1f, 9f, 6f), ModelTransform.of(4f, 2f, 3.2f, 0.4f, 0f, 0.3f));
+
+        ModelPartData arc = body.addChild("acc_archer", b(), N);
+        arc.addChild("quiver", b().uv(16, 16).cuboid(-2.6f, -1.5f, 3.2f, 3.2f, 10f, 2.8f), N);
+        arc.addChild("a1", b().uv(32, 0).cuboid(-2.2f, -4f, 4f, 0.8f, 2.6f, 0.8f), N);
+        arc.addChild("a2", b().uv(32, 0).cuboid(-1.0f, -3.5f, 4f, 0.8f, 2.2f, 0.8f), N);
+        arc.addChild("a3", b().uv(32, 0).cuboid(0.0f, -4.2f, 4f, 0.8f, 2.8f, 0.8f), N);
     }
 
     /** Шість видів зброї + 4 руни-орби навколо. Імена груп = порядок Archetype. */

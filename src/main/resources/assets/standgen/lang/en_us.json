@@ -1,7 +1,6 @@
 {
   "item.standgen.stand_arrow": "Stand Arrow",
   "item.standgen.stand_arrow.tooltip1": "Hold right-click for 1 second to awaken your stand.",
-  "item.standgen.stand_arrow.tooltip2": "%s chance to die if unworthy (not in hardcore).",
   "item.standgen.stand_arrow.tooltip3": "Shoot it at a player with a bow to awaken theirs.",
   "entity.standgen.stand": "Stand",
   "key.categories.standgen": "StandGen",
