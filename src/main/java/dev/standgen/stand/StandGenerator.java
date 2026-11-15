@@ -1,5 +1,6 @@
 package dev.standgen.stand;
 
+import dev.standgen.StandGenMod;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -53,6 +54,7 @@ public final class StandGenerator {
         StandData d = generate(p);
         StandManager m = StandManager.get(p.getServer());
         m.put(p.getUuid(), d);
+        StandGenMod.sendHasStand(p, true);
         p.sendMessage(Text.translatable("msg.standgen.awakened").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
         for (Text t : d.describe()) p.sendMessage(t);
         p.sendMessage(d.scoreLine());

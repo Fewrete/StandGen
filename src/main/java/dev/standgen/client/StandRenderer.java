@@ -46,6 +46,7 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
 
     @Override
     public void render(StandEntity e, float yaw, float tickDelta, MatrixStack m, VertexConsumerProvider vcp, int light) {
+        if (!StandClientState.canSeeStands()) return;
         float bodyYaw = MathHelper.lerpAngleDegrees(tickDelta, e.prevBodyYaw, e.bodyYaw);
         float headYaw = MathHelper.lerpAngleDegrees(tickDelta, e.prevHeadYaw, e.headYaw) - bodyYaw;
         float pitch = MathHelper.lerp(tickDelta, e.prevPitch, e.getPitch());

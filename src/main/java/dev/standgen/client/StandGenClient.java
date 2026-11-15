@@ -4,6 +4,7 @@ import dev.standgen.StandGenMod;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
@@ -47,6 +48,12 @@ public class StandGenClient implements ClientModInitializer {
         skill4 = key("key.standgen.skill4", GLFW.GLFW_KEY_B);
         mode = key("key.standgen.mode", GLFW.GLFW_KEY_G);
         hold = key("key.standgen.attack", GLFW.GLFW_KEY_Z);
+
+        ClientPlayNetworking.registerGlobalReceiver(StandGenMod.HAS_STAND, (client, handler, buf, sender) -> {
+            boolean has = buf.readBoolean();
+            client.execute(() -> StandClientState.hasStand = has);
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> StandClientState.hasStand = false);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;

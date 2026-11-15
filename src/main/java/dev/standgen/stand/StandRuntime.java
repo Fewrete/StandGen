@@ -5,6 +5,8 @@ import dev.standgen.entity.StandEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
@@ -33,17 +35,18 @@ public final class StandRuntime {
     private static final Set<UUID> ARMOR_ON = new HashSet<>();
     private static final Map<UUID, Integer> BARRAGE = new HashMap<>();  // до якого тіка триває серія ударів броні
     private static final Map<UUID, Integer> NEXT_HIT = new HashMap<>();
+    private static final Set<UUID> STANCE = new HashSet<>();   // перемикана пасивка Броньована стійка
 
     private StandRuntime() {}
 
     public static void clear() {
         ACTIVE.clear(); COOLDOWN.clear(); MANUAL.clear(); HOLD.clear(); REVIVE.clear();
-        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear();
+        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear();
     }
 
     public static void forget(UUID id) {
         ACTIVE.remove(id); COOLDOWN.remove(id); MANUAL.remove(id); HOLD.remove(id); REVIVE.remove(id);
-        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id);
+        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id);
     }
 
     public static StandEntity getStand(ServerPlayerEntity p) {
@@ -128,6 +131,7 @@ public final class StandRuntime {
         UUID id = p.getUuid();
         if (ARMOR_ON.contains(id)) {
             ARMOR_ON.remove(id);
+            STANCE.remove(id);
             stripArmor(p);
             msg(p, "msg.standgen.dismissed", Formatting.GRAY);
             return;
@@ -144,12 +148,23 @@ public final class StandRuntime {
         msg(p, Text.literal(d.name), Formatting.GOLD);
     }
 
+    private static void toggleStance(ServerPlayerEntity p) {
+        UUID id = p.getUuid();
+        boolean on = !STANCE.contains(id);
+        if (on) STANCE.add(id); else STANCE.remove(id);
+        p.sendMessage(Text.translatable(on ? "msg.standgen.toggle_on" : "msg.standgen.toggle_off", Skill.WALL.text())
+                .formatted(on ? Formatting.GREEN : Formatting.GRAY), true);
+        ((ServerWorld) p.getWorld()).playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_ANVIL_PLACE,
+                SoundCategory.PLAYERS, 0.8f, on ? 0.7f : 1.2f);
+    }
+
     /** Прибрати стенд будь-якої форми (сутність або броню). */
     public static void dismiss(ServerPlayerEntity p) {
         StandEntity s = getStand(p);
         if (s != null) s.discard();
         ACTIVE.remove(p.getUuid());
         boolean was = ARMOR_ON.remove(p.getUuid());
+        STANCE.remove(p.getUuid());
         if (was || hasStandArmor(p)) stripArmor(p);
     }
 
@@ -164,10 +179,17 @@ public final class StandRuntime {
                 if (!ARMOR_ON.contains(id) && has) stripArmor(p);          // залишилась від минулої сесії
                 else if (ARMOR_ON.contains(id) && !has) ARMOR_ON.remove(id); // зникла (смерть, команди)
             }
-            if (!ARMOR_ON.contains(id)) continue;
+            if (!ARMOR_ON.contains(id)) { STANCE.remove(id); continue; }
             StandData d = mgr.get(id);
-            if (d == null) { stripArmor(p); ARMOR_ON.remove(id); continue; }
-            if (now % 40 == 0) Abilities.applyPassive(p, d);
+            if (d == null) { stripArmor(p); ARMOR_ON.remove(id); STANCE.remove(id); continue; }
+            boolean stance = STANCE.contains(id);
+            if (stance && now % 10 == 0) {
+                // Стійка: Опір IV (як було) ціною Уповільнення II. Ефекти короткі й оновлюються, тож зникають одразу після вимкнення.
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 25, 3, true, true));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 25, 1, true, true));
+            }
+            // у стійці пасивка Сили (Боєць) вимкнена
+            if (now % 40 == 0 && !(stance && d.primary == Archetype.FIGHTER)) Abilities.applyPassive(p, d);
             armorStrike(p, d, now);
         }
     }
@@ -252,6 +274,11 @@ public final class StandRuntime {
         int now = p.getServer().getTicks();
         if (now < cd[slot]) {
             msg(p, "msg.standgen.cooldown", Formatting.RED, sk.text(), (cd[slot] - now) / 20 + 1);
+            return;
+        }
+        if (sk == Skill.WALL && d.form == StandForm.ARMORED) {   // перемикач, а не здібність з перезарядкою
+            cd[slot] = now + Abilities.cooldown(sk, d);
+            toggleStance(p);
             return;
         }
         if (Abilities.execute(sk, p, s, d)) {

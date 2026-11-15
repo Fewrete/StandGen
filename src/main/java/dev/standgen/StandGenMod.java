@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
@@ -29,6 +30,7 @@ import net.minecraft.item.ArmorItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroups;
 import net.minecraft.loot.LootPool;
+import net.minecraft.network.PacketByteBuf;
 import net.minecraft.loot.condition.RandomChanceLootCondition;
 import net.minecraft.loot.entry.ItemEntry;
 import net.minecraft.loot.provider.number.ConstantLootNumberProvider;
@@ -49,12 +51,20 @@ import java.util.Map;
 public class StandGenMod implements ModInitializer {
     public static final String MOD_ID = "standgen";
     public static final Identifier ACTION = new Identifier(MOD_ID, "action");
+    /** Сервер -> клієнт: чи є в цього гравця стенд (без стенда чужі стенди не рендеряться). */
+    public static final Identifier HAS_STAND = new Identifier(MOD_ID, "has_stand");
 
     /** Коди дій з клієнта. */
     public static final int ACT_SUMMON = 0, ACT_SKILL1 = 1, ACT_SKILL2 = 2, ACT_SKILL3 = 3, ACT_SKILL4 = 4,
             ACT_MODE = 5, ACT_HOLD_ON = 6, ACT_HOLD_OFF = 7;
 
     public static Identifier id(String path) { return new Identifier(MOD_ID, path); }
+
+    public static void sendHasStand(ServerPlayerEntity p, boolean has) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeBoolean(has);
+        ServerPlayNetworking.send(p, HAS_STAND, buf);
+    }
 
     public static final Item STAND_ARROW = Registry.register(Registries.ITEM, id("stand_arrow"),
             new StandArrowItem(new FabricItemSettings().maxCount(16).rarity(Rarity.RARE)));
@@ -199,6 +209,8 @@ public class StandGenMod implements ModInitializer {
             }
         });
 
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
+                sendHasStand(handler.player, StandManager.get(server).get(handler.player.getUuid()) != null));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> { StandRuntime.dismiss(handler.player); StandRuntime.forget(handler.player.getUuid()); });
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> StandRuntime.clear());
 
@@ -226,6 +238,7 @@ public class StandGenMod implements ModInitializer {
                             ServerPlayerEntity p = ctx.getSource().getPlayerOrThrow();
                             StandRuntime.dismiss(p);
                             StandManager.get(ctx.getSource().getServer()).remove(p.getUuid());
+                            sendHasStand(p, false);
                             ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.reset"), false);
                             return 1;
                         }))

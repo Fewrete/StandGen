@@ -11,20 +11,20 @@ public enum Skill {
     BARRAGE(230),          // кд 11.5 с, не залежить від швидкості
     BASTION(400),
     DASH(120),
-    PIERCE(160),
-    RESURGENCE(500),
+    PIERCE(200),
+    RESURGENCE(600),
     // слот 2 (за формою)
     GRAB(300),
-    WALL(360),
+    WALL(40),
     THROW(260),
     BURST(280),
     // слот 3 (ультимейти)
     QUAKE(1200),
     FURY(1400),
-    CITADEL(1500),
+    CITADEL(1800),
     TIMESTOP(1500),
     ARROW_RAIN(1100),
-    SECOND_CHANCE(2400);
+    SECOND_CHANCE(3600);
 
     /** Стадія, з якої відкривається слот. */
     public static final int[] UNLOCK = {0, 2, 3, 4};

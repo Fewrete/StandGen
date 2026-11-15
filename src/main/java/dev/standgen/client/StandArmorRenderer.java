@@ -78,6 +78,7 @@ public class StandArmorRenderer implements ArmorRenderer {
     @Override
     public void render(MatrixStack matrices, VertexConsumerProvider vcp, ItemStack stack, LivingEntity entity,
                        EquipmentSlot slot, int light, BipedEntityModel<LivingEntity> ctx) {
+        if (!StandClientState.canSeeStands()) return;
         NbtCompound n = stack.getNbt();
         if (n == null || !n.contains("c1")) return;
         if (root == null) root = MinecraftClient.getInstance().getEntityModelLoader().getModelPart(StandModels.WORN);

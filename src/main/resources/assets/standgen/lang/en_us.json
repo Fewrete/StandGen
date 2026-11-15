@@ -34,7 +34,7 @@
   "standgen.skill.pierce": "Piercing Shot",
   "standgen.skill.resurgence": "Resurgence",
   "standgen.skill.grab": "Grab",
-  "standgen.skill.wall": "Armored Wall",
+  "standgen.skill.wall": "Armored Stance (toggle)",
   "standgen.skill.throw": "Weapon Throw",
   "standgen.skill.burst": "Shard Burst",
   "standgen.skill.quake": "Earthquake",
@@ -94,5 +94,7 @@
   "item.standgen.stand_leggings": "Stand Leggings",
   "item.standgen.stand_boots": "Stand Boots",
   "item.standgen.stand_armor.tooltip": "Part of your stand. Cannot be removed until you dismiss the stand.",
-  "msg.standgen.armor_remove_first": "Take off all your armor first (this stand is worn as armor)"
+  "msg.standgen.armor_remove_first": "Take off all your armor first (this stand is worn as armor)",
+  "msg.standgen.toggle_on": "%s: ON",
+  "msg.standgen.toggle_off": "%s: OFF"
 }

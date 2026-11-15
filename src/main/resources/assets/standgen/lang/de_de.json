@@ -34,7 +34,7 @@
   "standgen.skill.pierce": "Durchbohrender Schuss",
   "standgen.skill.resurgence": "Wiederbelebung",
   "standgen.skill.grab": "Griff",
-  "standgen.skill.wall": "Gepanzerte Wand",
+  "standgen.skill.wall": "Gepanzerte Haltung (Umschalter)",
   "standgen.skill.throw": "Waffenwurf",
   "standgen.skill.burst": "Splitterexplosion",
   "standgen.skill.quake": "Erdbeben",
@@ -94,5 +94,7 @@
   "item.standgen.stand_leggings": "Stand-Beinschutz",
   "item.standgen.stand_boots": "Stand-Stiefel",
   "item.standgen.stand_armor.tooltip": "Teil deines Stands. Kann erst abgelegt werden, wenn du den Stand entlässt.",
-  "msg.standgen.armor_remove_first": "Lege zuerst deine ganze Rüstung ab (dieser Stand wird als Rüstung getragen)"
+  "msg.standgen.armor_remove_first": "Lege zuerst deine ganze Rüstung ab (dieser Stand wird als Rüstung getragen)",
+  "msg.standgen.toggle_on": "%s: AN",
+  "msg.standgen.toggle_off": "%s: AUS"
 }

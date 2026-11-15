@@ -34,7 +34,7 @@
   "standgen.skill.pierce": "Пронзающий выстрел",
   "standgen.skill.resurgence": "Возрождение",
   "standgen.skill.grab": "Хватка",
-  "standgen.skill.wall": "Бронированная стена",
+  "standgen.skill.wall": "Бронированная стойка (переключатель)",
   "standgen.skill.throw": "Метание оружия",
   "standgen.skill.burst": "Взрыв осколков",
   "standgen.skill.quake": "Землетрясение",
@@ -94,5 +94,7 @@
   "item.standgen.stand_leggings": "Поножи стенда",
   "item.standgen.stand_boots": "Ботинки стенда",
   "item.standgen.stand_armor.tooltip": "Часть твоего стенда. Нельзя снять, пока стенд не отозван.",
-  "msg.standgen.armor_remove_first": "Сначала сними всю броню (этот стенд носится как броня)"
+  "msg.standgen.armor_remove_first": "Сначала сними всю броню (этот стенд носится как броня)",
+  "msg.standgen.toggle_on": "%s: ВКЛЮЧЕНО",
+  "msg.standgen.toggle_off": "%s: ВЫКЛЮЧЕНО"
 }

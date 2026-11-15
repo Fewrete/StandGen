@@ -34,7 +34,7 @@
   "standgen.skill.pierce": "Пронизуючий постріл",
   "standgen.skill.resurgence": "Відродження",
   "standgen.skill.grab": "Хватка",
-  "standgen.skill.wall": "Броньована стіна",
+  "standgen.skill.wall": "Броньована стійка (перемикач)",
   "standgen.skill.throw": "Метання зброї",
   "standgen.skill.burst": "Вибух уламків",
   "standgen.skill.quake": "Землетрус",
@@ -94,5 +94,7 @@
   "item.standgen.stand_leggings": "Поножі стенда",
   "item.standgen.stand_boots": "Чоботи стенда",
   "item.standgen.stand_armor.tooltip": "Частина твого стенда. Не можна зняти, поки стенд не відкликано.",
-  "msg.standgen.armor_remove_first": "Спершу зніми всю броню (цей стенд носиться як броня)"
+  "msg.standgen.armor_remove_first": "Спершу зніми всю броню (цей стенд носиться як броня)",
+  "msg.standgen.toggle_on": "%s: УВІМКНЕНО",
+  "msg.standgen.toggle_off": "%s: ВИМКНЕНО"
 }

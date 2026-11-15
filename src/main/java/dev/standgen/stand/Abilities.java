@@ -103,7 +103,7 @@ public final class Abilities {
                 return true;
             }
             case BASTION -> {
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 1 + d.stage / 2));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 400, Math.min(3, 1 + d.stage / 3)));
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 1));
                 w.spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1, p.getZ(), 40, 0.6, 0.8, 0.6, 0.2);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_ANVIL_PLACE, 0.8f, 1.3f);
@@ -112,21 +112,14 @@ public final class Abilities {
             case DASH -> { return dash(p, w, d); }
             case PIERCE -> { return pierce(p, w, d); }
             case RESURGENCE -> {
-                p.heal(6 + d.stage * 2);
+                p.heal(4 + d.stage);
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 1));
                 w.spawnParticles(ParticleTypes.HEART, p.getX(), p.getY() + 1.2, p.getZ(), 10, 0.5, 0.5, 0.5, 0.1);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ITEM_TOTEM_USE, 0.5f, 1.5f);
                 return true;
             }
             case GRAB -> { return grab(p, w, d); }
-            case WALL -> {
-                int dur = 80 + d.stage * 10;
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, dur, 3));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, dur, 0));
-                w.spawnParticles(ParticleTypes.ENCHANTED_HIT, p.getX(), p.getY() + 1, p.getZ(), 30, 0.6, 0.9, 0.6, 0.3);
-                sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_ANVIL_PLACE, 1f, 0.7f);
-                return true;
-            }
+            case WALL -> { return false; }   // це перемикач: обробляється в StandRuntime.toggleStance
             case THROW -> { return thrust(p, w, d); }
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }
@@ -140,8 +133,8 @@ public final class Abilities {
                 return true;
             }
             case CITADEL -> {
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 900, 4));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 1));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 2));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 0));
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 200, 0));
                 for (ServerPlayerEntity o : w.getPlayers(x -> x != p && x.squaredDistanceTo(p) < 64)) {
                     o.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 1));
@@ -218,7 +211,7 @@ public final class Abilities {
         Vec3d eye = p.getEyePos();
         Vec3d look = p.getRotationVec(1f);
         double max = armored(d) ? 4.5 : 25 + d.range * 0.3;
-        float dmg = 4 + d.power * 0.12f + d.precision * 0.05f;
+        float dmg = 3 + d.power * 0.08f + d.precision * 0.03f;
         Set<Entity> hit = new HashSet<>();
         for (double t = 1; t <= max; t += 0.5) {
             Vec3d pt = eye.add(look.multiply(t));
@@ -260,7 +253,7 @@ public final class Abilities {
         Vec3d eye = p.getEyePos();
         Vec3d look = p.getRotationVec(1f);
         double max = 14 + d.range * 0.15;
-        float dmg = 6 + d.power * 0.1f;
+        float dmg = 5 + d.power * 0.07f;
         Set<Entity> hit = new HashSet<>();
         Vec3d end = eye;
         for (double t = 1; t <= max; t += 0.5) {
@@ -285,7 +278,7 @@ public final class Abilities {
 
     private static boolean burst(ServerPlayerEntity p, ServerWorld w, StandData d) {
         double r = 4 + d.range * 0.04;
-        float dmg = 5 + d.power * 0.08f;
+        float dmg = 4 + d.power * 0.06f;
         for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r),
                 x -> validTarget(x, p) && x.squaredDistanceTo(p) <= r * r)) {
             e.timeUntilRegen = 0;
@@ -301,8 +294,8 @@ public final class Abilities {
 
     // ---- ультимейти ----
     private static boolean quake(ServerPlayerEntity p, ServerWorld w, StandData d) {
-        double r = 8;
-        float dmg = 8 + d.power * 0.1f;
+        double r = 6;
+        float dmg = 5 + d.power * 0.06f;
         for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r),
                 x -> validTarget(x, p) && x.squaredDistanceTo(p) <= r * r)) {
             e.timeUntilRegen = 0;
@@ -342,7 +335,7 @@ public final class Abilities {
         Vec3d center = hr.getType() == HitResult.Type.MISS
                 ? p.getEyePos().add(p.getRotationVec(1f).multiply(Math.min(reach, 18)))
                 : hr.getPos();
-        int n = Math.min(32, 12 + d.stage * 2);
+        int n = Math.min(24, 10 + d.stage * 2);
         for (int i = 0; i < n; i++) {
             ArrowEntity a = new ArrowEntity(w,
                     center.x + (w.random.nextDouble() - 0.5) * 8,
@@ -351,7 +344,7 @@ public final class Abilities {
             a.setOwner(p);
             a.setVelocity(0, -1, 0, 2.2f, 4.0f);
             a.setCritical(true);
-            a.setDamage(1.5 + d.power * 0.02);
+            a.setDamage(1.2 + d.power * 0.015);
             a.pickupType = PersistentProjectileEntity.PickupPermission.DISALLOWED;
             w.spawnEntity(a);
         }
@@ -371,7 +364,8 @@ public final class Abilities {
             case SURVIVOR -> StatusEffects.REGENERATION;
         };
         if (d.primary == Archetype.SURVIVOR && d.stage < 2) return;
-        int cap = (eff == StatusEffects.STRENGTH || eff == StatusEffects.RESISTANCE) ? 1 : 2;
+        if (d.primary == Archetype.FIGHTER && d.stage < 3) return;
+        int cap = eff == StatusEffects.STRENGTH ? 0 : eff == StatusEffects.RESISTANCE ? 1 : 2;
         int amp = d.primary == Archetype.SURVIVOR ? 0 : Math.min(d.stage / 3, cap);
         p.addStatusEffect(new StatusEffectInstance(eff, 80, amp, true, false));
     }

@@ -1,4 +1,4 @@
-# StandGen 0.2.1 (Fabric 1.20.1)
+# StandGen 0.2.2 (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -46,7 +46,13 @@ The Armor stand is real armor worn on your body (all four slots), visible to eve
   and your own hits deal more damage (scaling with power).
 - It cannot hit from a distance. Auto mode: it strikes enemies right next to you (about 2.5 blocks). Manual mode: it strikes what you
   look at, up to about 4 blocks, while Z is held. Barrage and Fury Mode are close-range combos.
+- **Armored Stance** (skill 3, V) is a toggleable passive, not a cooldown skill. While it is on you get Resistance IV and Slowness II,
+  and the Fighter strength passive is suppressed. Toggle it off to move and fight normally.
 - Reworked for close range: Piercing Shot (4.5 blocks), Grab (3.5 blocks), Arrow Rain (falls within 8 blocks), Excavate (5 blocks).
+
+## Multiplayer
+- A player who has no stand **cannot see other players' stands** (the figure, the armor and its particles). Spectators see everything.
+- All stand messages (awakening, evolution, `/stand info`) are private to the player. Nothing is broadcast to the server chat.
 
 ## Commands
 `/stand info` shows your stand. For operators: `/stand awaken`, `/stand reset`, `/stand stage 0..8` (for testing skills).

@@ -222,10 +222,20 @@ public class StandEntity extends LivingEntity {
 
         // ---- візуальні деталі: ефект від типу душі, слід зі стадії 3 ----
         if (d.stage >= 1 && age % 8 == 0) {
-            w.spawnParticles(ambient(d.primary), getX(), getY() + 1.0, getZ(), 1, 0.25, 0.4, 0.25, 0.01);
+            seenParticles(w, ambient(d.primary), 1, 0.25, 0.4, 0.25, 0.01);
         }
         if (d.stage >= 3 && age % 6 == 0) {
-            w.spawnParticles(ParticleTypes.END_ROD, getX(), getY() + 1.0, getZ(), 1, 0.2, 0.4, 0.2, 0.0);
+            seenParticles(w, ParticleTypes.END_ROD, 1, 0.2, 0.4, 0.2, 0.0);
+        }
+    }
+
+    /** Частинки самого стенда бачать лише гравці, у яких теж є стенд. */
+    private void seenParticles(ServerWorld w, ParticleEffect type, int count, double dx, double dy, double dz, double speed) {
+        StandManager m = StandManager.get(w.getServer());
+        for (ServerPlayerEntity v : w.getPlayers()) {
+            if (v.squaredDistanceTo(this) < 1024 && m.get(v.getUuid()) != null) {
+                w.spawnParticles(v, type, false, getX(), getY() + 1.0, getZ(), count, dx, dy, dz, speed);
+            }
         }
     }
 

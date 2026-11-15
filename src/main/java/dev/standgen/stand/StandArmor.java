@@ -66,7 +66,7 @@ public final class StandArmor {
                 new EntityAttributeModifier(id, "Stand armor knockback", knockback / 4.0, EntityAttributeModifier.Operation.ADDITION), slot);
         if (slot == EquipmentSlot.CHEST) {   // сила стенда підсилює власні удари гравця
             st.addAttributeModifier(EntityAttributes.GENERIC_ATTACK_DAMAGE,
-                    new EntityAttributeModifier(id, "Stand armor power", d.power * 0.02, EntityAttributeModifier.Operation.ADDITION), slot);
+                    new EntityAttributeModifier(id, "Stand armor power", d.power * 0.012, EntityAttributeModifier.Operation.ADDITION), slot);
         }
         st.addEnchantment(Enchantments.BINDING_CURSE, 1);
         st.addEnchantment(Enchantments.VANISHING_CURSE, 1);

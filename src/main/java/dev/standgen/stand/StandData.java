@@ -117,12 +117,11 @@ public class StandData {
         l.add(statLine("power", power).append("   ").append(statLine("speed", speed)).formatted(Formatting.WHITE));
         l.add(statLine("range", range).append("   ").append(statLine("durability", durability))
                 .append("   ").append(statLine("precision", precision)).formatted(Formatting.WHITE));
-        String[] keys = {"X", "C", "V", "B"};
         for (int i = 0; i < 4; i++) {
             boolean open = stage >= unlockStage(i);
             l.add((open
-                    ? Text.translatable("msg.standgen.skill", keys[i], skill(i).text())
-                    : Text.translatable("msg.standgen.skill_locked", keys[i], skill(i).text(), unlockStage(i)))
+                    ? Text.translatable("msg.standgen.skill", Text.keybind("key.standgen.skill" + (i + 1)), skill(i).text())
+                    : Text.translatable("msg.standgen.skill_locked", Text.keybind("key.standgen.skill" + (i + 1)), skill(i).text(), unlockStage(i)))
                     .formatted(open ? Formatting.GREEN : Formatting.GRAY));
         }
         return l;
