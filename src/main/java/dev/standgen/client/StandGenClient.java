@@ -40,6 +40,10 @@ public class StandGenClient implements ClientModInitializer {
         ColorProviderRegistry.ITEM.register((stack, tintIndex) ->
                         stack.hasNbt() && stack.getNbt().contains("c1") ? stack.getNbt().getInt("c1") : 0xFFFFFF,
                 StandGenMod.STAND_HELMET, StandGenMod.STAND_CHESTPLATE, StandGenMod.STAND_LEGGINGS, StandGenMod.STAND_BOOTS);
+        ColorProviderRegistry.ITEM.register((stack, tintIndex) ->
+                        stack.hasNbt() && stack.getNbt().contains("c1") ? stack.getNbt().getInt("c1") : 0xFFFFFF,
+                StandGenMod.STAND_PICKAXE, StandGenMod.STAND_SWORD, StandGenMod.STAND_HAMMER,
+                StandGenMod.STAND_SPEAR, StandGenMod.STAND_BOW, StandGenMod.STAND_SHIELD);
 
         summon = key("key.standgen.summon", GLFW.GLFW_KEY_R);
         skill1 = key("key.standgen.skill1", GLFW.GLFW_KEY_X);

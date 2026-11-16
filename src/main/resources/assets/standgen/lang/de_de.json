@@ -96,5 +96,13 @@
   "item.standgen.stand_armor.tooltip": "Teil deines Stands. Kann erst abgelegt werden, wenn du den Stand entlässt.",
   "msg.standgen.armor_remove_first": "Lege zuerst deine ganze Rüstung ab (dieser Stand wird als Rüstung getragen)",
   "msg.standgen.toggle_on": "%s: AN",
-  "msg.standgen.toggle_off": "%s: AUS"
+  "msg.standgen.toggle_off": "%s: AUS",
+  "item.standgen.stand_pickaxe": "Stand-Spitzhacke",
+  "item.standgen.stand_sword": "Stand-Schwert",
+  "item.standgen.stand_hammer": "Stand-Hammer",
+  "item.standgen.stand_spear": "Stand-Speer",
+  "item.standgen.stand_bow": "Stand-Bogen",
+  "item.standgen.stand_shield": "Stand-Schild",
+  "item.standgen.stand_weapon.tooltip": "Teil deines Stands. Verschwindet beim Wechsel in den Automodus oder wenn du den Stand entlässt.",
+  "msg.standgen.free_slot": "Mach zuerst einen Hotbar-Platz frei: Die Waffe wird als Gegenstand ausgegeben"
 }

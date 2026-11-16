@@ -5,6 +5,7 @@ import dev.standgen.entity.StandEntity;
 import dev.standgen.item.StandArmorItem;
 import dev.standgen.item.StandArmorMaterial;
 import dev.standgen.item.StandArrowItem;
+import dev.standgen.item.StandWeaponItems;
 import dev.standgen.stand.*;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -77,6 +78,19 @@ public class StandGenMod implements ModInitializer {
             new StandArmorItem(StandArmorMaterial.INSTANCE, ArmorItem.Type.LEGGINGS, new FabricItemSettings().maxCount(1).fireproof()));
     public static final Item STAND_BOOTS = Registry.register(Registries.ITEM, id("stand_boots"),
             new StandArmorItem(StandArmorMaterial.INSTANCE, ArmorItem.Type.BOOTS, new FabricItemSettings().maxCount(1).fireproof()));
+
+    public static final Item STAND_PICKAXE = Registry.register(Registries.ITEM, id("stand_pickaxe"),
+            new StandWeaponItems.Pickaxe(new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_SWORD = Registry.register(Registries.ITEM, id("stand_sword"),
+            new StandWeaponItems.Sword(new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_HAMMER = Registry.register(Registries.ITEM, id("stand_hammer"),
+            new StandWeaponItems.Hammer(new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_SPEAR = Registry.register(Registries.ITEM, id("stand_spear"),
+            new StandWeaponItems.Spear(new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_BOW = Registry.register(Registries.ITEM, id("stand_bow"),
+            new StandWeaponItems.Bow(new FabricItemSettings().maxCount(1).fireproof()));
+    public static final Item STAND_SHIELD = Registry.register(Registries.ITEM, id("stand_shield"),
+            new StandWeaponItems.Shield(new FabricItemSettings().maxCount(1).fireproof()));
 
     public static final EntityType<StandEntity> STAND = Registry.register(Registries.ENTITY_TYPE, id("stand"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, StandEntity::new)

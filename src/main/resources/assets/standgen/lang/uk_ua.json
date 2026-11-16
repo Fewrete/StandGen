@@ -96,5 +96,13 @@
   "item.standgen.stand_armor.tooltip": "Частина твого стенда. Не можна зняти, поки стенд не відкликано.",
   "msg.standgen.armor_remove_first": "Спершу зніми всю броню (цей стенд носиться як броня)",
   "msg.standgen.toggle_on": "%s: УВІМКНЕНО",
-  "msg.standgen.toggle_off": "%s: ВИМКНЕНО"
+  "msg.standgen.toggle_off": "%s: ВИМКНЕНО",
+  "item.standgen.stand_pickaxe": "Кирка стенда",
+  "item.standgen.stand_sword": "Меч стенда",
+  "item.standgen.stand_hammer": "Молот стенда",
+  "item.standgen.stand_spear": "Спис стенда",
+  "item.standgen.stand_bow": "Лук стенда",
+  "item.standgen.stand_shield": "Щит стенда",
+  "item.standgen.stand_weapon.tooltip": "Частина твого стенда. Зникає, коли перейдеш в авто-режим або відкличеш стенд.",
+  "msg.standgen.free_slot": "Спершу звільни комірку хотбара: зброя видається як предмет"
 }

@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -35,18 +36,19 @@ public final class StandRuntime {
     private static final Set<UUID> ARMOR_ON = new HashSet<>();
     private static final Map<UUID, Integer> BARRAGE = new HashMap<>();  // до якого тіка триває серія ударів броні
     private static final Map<UUID, Integer> NEXT_HIT = new HashMap<>();
+    private static final Set<UUID> WEAPON_HELD = new HashSet<>();   // форма Зброя в ручному режимі: інструмент у руках
     private static final Set<UUID> STANCE = new HashSet<>();   // перемикана пасивка Броньована стійка
 
     private StandRuntime() {}
 
     public static void clear() {
         ACTIVE.clear(); COOLDOWN.clear(); MANUAL.clear(); HOLD.clear(); REVIVE.clear();
-        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear();
+        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear(); WEAPON_HELD.clear();
     }
 
     public static void forget(UUID id) {
         ACTIVE.remove(id); COOLDOWN.remove(id); MANUAL.remove(id); HOLD.remove(id); REVIVE.remove(id);
-        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id);
+        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id); WEAPON_HELD.remove(id);
     }
 
     public static StandEntity getStand(ServerPlayerEntity p) {
@@ -84,6 +86,22 @@ public final class StandRuntime {
         boolean nowManual = !MANUAL.contains(id);
         if (nowManual) MANUAL.add(id);
         else { MANUAL.remove(id); HOLD.remove(id); }
+
+        // форма Зброя: у ручному режимі зброя видається в руки як інструмент, в авто-режимі літає поруч
+        StandData d = StandManager.get(p.getServer()).get(id);
+        if (d != null && d.form == StandForm.WEAPON) {
+            StandEntity cur = getStand(p);
+            if (nowManual && cur != null) {
+                if (!giveWeapon(p, d)) { MANUAL.remove(id); return; }   // немає вільного слота: лишаємось в авто-режимі
+                cur.discard();
+                ACTIVE.remove(id);
+                WEAPON_HELD.add(id);
+            } else if (!nowManual && WEAPON_HELD.contains(id)) {
+                WEAPON_HELD.remove(id);
+                stripWeapon(p);
+                spawnStand(p, d);
+            }
+        }
         msg(p, nowManual ? "msg.standgen.mode_manual" : "msg.standgen.mode_auto", Formatting.AQUA);
     }
 
@@ -166,6 +184,8 @@ public final class StandRuntime {
         boolean was = ARMOR_ON.remove(p.getUuid());
         STANCE.remove(p.getUuid());
         if (was || hasStandArmor(p)) stripArmor(p);
+        WEAPON_HELD.remove(p.getUuid());
+        stripWeapon(p);
     }
 
     /** Щотіка: чистка загублених предметів броні, пасивки й ближній бій броні. */
@@ -176,13 +196,23 @@ public final class StandRuntime {
             UUID id = p.getUuid();
             if (now % 20 == 0) {
                 boolean has = hasStandArmor(p);
-                if (!ARMOR_ON.contains(id) && has) stripArmor(p);          // залишилась від минулої сесії
-                else if (ARMOR_ON.contains(id) && !has) ARMOR_ON.remove(id); // зникла (смерть, команди)
+                if (!ARMOR_ON.contains(id) && has) stripArmor(p);            // залишилась від минулої сесії
+                else if (ARMOR_ON.contains(id) && !has) ARMOR_ON.remove(id);   // зникла (смерть, команди)
+                boolean hasW = hasStandWeapon(p);
+                if (!WEAPON_HELD.contains(id) && hasW) stripWeapon(p);
+                else if (WEAPON_HELD.contains(id) && !hasW) WEAPON_HELD.remove(id);
             }
-            if (!ARMOR_ON.contains(id)) { STANCE.remove(id); continue; }
+            boolean armor = ARMOR_ON.contains(id);
+            boolean weapon = WEAPON_HELD.contains(id);
+            if (!armor) STANCE.remove(id);
+            if (!armor && !weapon) continue;
             StandData d = mgr.get(id);
-            if (d == null) { stripArmor(p); ARMOR_ON.remove(id); STANCE.remove(id); continue; }
-            boolean stance = STANCE.contains(id);
+            if (d == null) {
+                stripArmor(p); stripWeapon(p);
+                ARMOR_ON.remove(id); WEAPON_HELD.remove(id); STANCE.remove(id);
+                continue;
+            }
+            boolean stance = armor && STANCE.contains(id);
             if (stance && now % 10 == 0) {
                 // Стійка: Опір IV (як було) ціною Уповільнення II. Ефекти короткі й оновлюються, тож зникають одразу після вимкнення.
                 p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 25, 3, true, true));
@@ -237,6 +267,21 @@ public final class StandRuntime {
             return;
         }
         if (d.form == StandForm.ARMORED) { toggleArmor(p, d); return; }
+        if (d.form == StandForm.WEAPON && MANUAL.contains(p.getUuid())) {
+            UUID id = p.getUuid();
+            if (WEAPON_HELD.contains(id)) {
+                WEAPON_HELD.remove(id);
+                stripWeapon(p);
+                msg(p, "msg.standgen.dismissed", Formatting.GRAY);
+                return;
+            }
+            if (!giveWeapon(p, d)) return;
+            StandEntity cur = getStand(p);
+            if (cur != null) { cur.discard(); ACTIVE.remove(id); }
+            WEAPON_HELD.add(id);
+            msg(p, Text.literal(d.name), Formatting.GOLD);
+            return;
+        }
 
         StandEntity existing = getStand(p);
         if (existing != null) {
@@ -245,6 +290,11 @@ public final class StandRuntime {
             msg(p, "msg.standgen.dismissed", Formatting.GRAY);
             return;
         }
+        spawnStand(p, d);
+        msg(p, Text.literal(d.name), Formatting.GOLD);
+    }
+
+    private static void spawnStand(ServerPlayerEntity p, StandData d) {
         ServerWorld w = (ServerWorld) p.getWorld();
         StandEntity s = new StandEntity(StandGenMod.STAND, w);
         s.setOwner(p.getUuid());
@@ -252,7 +302,38 @@ public final class StandRuntime {
         s.refreshPositionAndAngles(p.getX(), p.getY() + 0.3, p.getZ(), p.getYaw(), 0);
         w.spawnEntity(s);
         ACTIVE.put(p.getUuid(), s.getUuid());
-        msg(p, Text.literal(d.name), Formatting.GOLD);
+    }
+
+    // ================= Зброя в руках (форма Зброя, ручний режим) =================
+    public static boolean isWeaponHeld(UUID id) { return WEAPON_HELD.contains(id); }
+
+    private static boolean hasStandWeapon(ServerPlayerEntity p) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.size(); i++) if (StandWeapon.isStandWeapon(inv.getStack(i))) return true;
+        return StandWeapon.isStandWeapon(p.currentScreenHandler.getCursorStack());
+    }
+
+    private static void stripWeapon(ServerPlayerEntity p) {
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.size(); i++) if (StandWeapon.isStandWeapon(inv.getStack(i))) inv.setStack(i, ItemStack.EMPTY);
+        if (StandWeapon.isStandWeapon(p.currentScreenHandler.getCursorStack())) p.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
+    }
+
+    /** Кладе зброю в обрану комірку (якщо порожня) або в першу вільну комірку хотбара й вибирає її. */
+    private static boolean giveWeapon(ServerPlayerEntity p, StandData d) {
+        var inv = p.getInventory();
+        int slot = inv.selectedSlot;
+        if (!inv.getStack(slot).isEmpty()) {
+            slot = -1;
+            for (int i = 0; i < 9; i++) if (inv.getStack(i).isEmpty()) { slot = i; break; }
+            if (slot < 0) { msg(p, "msg.standgen.free_slot", Formatting.RED); return false; }
+        }
+        inv.setStack(slot, StandWeapon.create(d, p.getUuid()));
+        if (inv.selectedSlot != slot) {
+            inv.selectedSlot = slot;
+            p.networkHandler.sendPacket(new UpdateSelectedSlotS2CPacket(slot));
+        }
+        return true;
     }
 
     public static void useAbility(ServerPlayerEntity p, int slot) {
@@ -263,7 +344,10 @@ public final class StandRuntime {
             if (!ARMOR_ON.contains(p.getUuid())) { msg(p, "msg.standgen.summon_first", Formatting.RED); return; }
         } else {
             s = getStand(p);
-            if (s == null) { msg(p, "msg.standgen.summon_first", Formatting.RED); return; }
+            if (s == null && !(d.form == StandForm.WEAPON && WEAPON_HELD.contains(p.getUuid()))) {
+                msg(p, "msg.standgen.summon_first", Formatting.RED);
+                return;
+            }
         }
         if (d.stage < d.unlockStage(slot)) {
             msg(p, "msg.standgen.locked", Formatting.RED, d.unlockStage(slot));

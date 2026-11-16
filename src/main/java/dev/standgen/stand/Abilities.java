@@ -14,6 +14,8 @@ import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ArrowEntity;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.particle.DustColorTransitionParticleEffect;
+import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -28,6 +30,8 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+
+import org.joml.Vector3f;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -187,7 +191,7 @@ public final class Abilities {
     private static boolean dash(ServerPlayerEntity p, ServerWorld w, StandData d) {
         Vec3d look = p.getRotationVec(1f);
         Vec3d start = p.getPos();
-        double max = 6 + d.speed * 0.12;
+        double max = Math.min(10.0, 2.0 + d.speed * 0.07);   // дальність залежить від швидкості стенда
         Vec3d last = start;
         for (double t = 0.5; t <= max; t += 0.5) {
             Vec3d next = start.add(look.multiply(t));
@@ -195,16 +199,39 @@ public final class Abilities {
             if (!w.isSpaceEmpty(p, box)) break;
             last = next;
         }
-        if (last.squaredDistanceTo(start) < 1.0) {
+        if (last.squaredDistanceTo(start) < 0.8) {
             fail(p, "msg.standgen.fail_no_room");
             return false;
         }
-        w.spawnParticles(ParticleTypes.CLOUD, start.x, start.y + 1, start.z, 25, 0.3, 0.5, 0.3, 0.05);
+        dashTrail(w, start, last, d);
         p.requestTeleport(last.x, last.y, last.z);
         p.fallDistance = 0;
+        p.setVelocity(look.multiply(0.6));          // інерція: гравець не зупиняється різко
+        p.velocityModified = true;
         p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 100, 1 + d.stage / 3));
-        sound(w, last.x, last.y, last.z, SoundEvents.ENTITY_ENDERMAN_TELEPORT, 0.6f, 1.6f);
+        sound(w, start.x, start.y, start.z, SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 0.9f, 1.3f);
         return true;
+    }
+
+    private static Vector3f rgb(int c) {
+        return new Vector3f((c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f);
+    }
+
+    /** Слід ривка: частинки кольорів стенда вздовж усього пройденого шляху, спалахи на початку й у кінці. */
+    private static void dashTrail(ServerWorld w, Vec3d from, Vec3d to, StandData d) {
+        DustColorTransitionParticleEffect fx = new DustColorTransitionParticleEffect(rgb(d.color1), rgb(d.color2), 1.6f);
+        DustParticleEffect core = new DustParticleEffect(rgb(d.color1), 2.2f);
+        double len = from.distanceTo(to);
+        int n = Math.max(2, (int) Math.ceil(len / 0.4));
+        for (int i = 0; i <= n; i++) {
+            Vec3d pt = from.lerp(to, i / (double) n);
+            w.spawnParticles(fx, pt.x, pt.y + 0.9, pt.z, 3, 0.2, 0.5, 0.2, 0.0);
+            w.spawnParticles(core, pt.x, pt.y + 0.9, pt.z, 1, 0.05, 0.3, 0.05, 0.0);
+            if (i % 2 == 0) w.spawnParticles(ParticleTypes.END_ROD, pt.x, pt.y + 0.9, pt.z, 1, 0.1, 0.4, 0.1, 0.02);
+            if (i % 4 == 0) w.spawnParticles(ParticleTypes.POOF, pt.x, pt.y + 0.1, pt.z, 1, 0.1, 0.0, 0.1, 0.01);
+        }
+        w.spawnParticles(fx, from.x, from.y + 1, from.z, 25, 0.35, 0.6, 0.35, 0.0);   // залишковий образ на старті
+        w.spawnParticles(fx, to.x, to.y + 1, to.z, 15, 0.3, 0.5, 0.3, 0.0);           // спалах у точці прибуття
     }
 
     private static boolean pierce(ServerPlayerEntity p, ServerWorld w, StandData d) {

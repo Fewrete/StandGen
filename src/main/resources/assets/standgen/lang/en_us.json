@@ -96,5 +96,13 @@
   "item.standgen.stand_armor.tooltip": "Part of your stand. Cannot be removed until you dismiss the stand.",
   "msg.standgen.armor_remove_first": "Take off all your armor first (this stand is worn as armor)",
   "msg.standgen.toggle_on": "%s: ON",
-  "msg.standgen.toggle_off": "%s: OFF"
+  "msg.standgen.toggle_off": "%s: OFF",
+  "item.standgen.stand_pickaxe": "Stand Pickaxe",
+  "item.standgen.stand_sword": "Stand Sword",
+  "item.standgen.stand_hammer": "Stand Hammer",
+  "item.standgen.stand_spear": "Stand Spear",
+  "item.standgen.stand_bow": "Stand Bow",
+  "item.standgen.stand_shield": "Stand Shield",
+  "item.standgen.stand_weapon.tooltip": "Part of your stand. Disappears when you switch to auto mode or dismiss the stand.",
+  "msg.standgen.free_slot": "Free a hotbar slot first: the weapon is given to you as an item"
 }

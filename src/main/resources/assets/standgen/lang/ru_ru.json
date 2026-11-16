@@ -96,5 +96,13 @@
   "item.standgen.stand_armor.tooltip": "Часть твоего стенда. Нельзя снять, пока стенд не отозван.",
   "msg.standgen.armor_remove_first": "Сначала сними всю броню (этот стенд носится как броня)",
   "msg.standgen.toggle_on": "%s: ВКЛЮЧЕНО",
-  "msg.standgen.toggle_off": "%s: ВЫКЛЮЧЕНО"
+  "msg.standgen.toggle_off": "%s: ВЫКЛЮЧЕНО",
+  "item.standgen.stand_pickaxe": "Кирка стенда",
+  "item.standgen.stand_sword": "Меч стенда",
+  "item.standgen.stand_hammer": "Молот стенда",
+  "item.standgen.stand_spear": "Копьё стенда",
+  "item.standgen.stand_bow": "Лук стенда",
+  "item.standgen.stand_shield": "Щит стенда",
+  "item.standgen.stand_weapon.tooltip": "Часть твоего стенда. Исчезает, когда перейдёшь в авто-режим или отзовёшь стенд.",
+  "msg.standgen.free_slot": "Сначала освободи ячейку хотбара: оружие выдаётся как предмет"
 }
