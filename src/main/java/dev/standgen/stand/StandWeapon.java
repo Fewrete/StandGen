@@ -7,8 +7,13 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.DyeColor;
 
 import java.util.UUID;
 
@@ -42,7 +47,7 @@ public final class StandWeapon {
             case BUILDER -> StandGenMod.STAND_HAMMER;
             case RUNNER -> StandGenMod.STAND_SPEAR;
             case ARCHER -> StandGenMod.STAND_BOW;
-            case SURVIVOR -> StandGenMod.STAND_SHIELD;
+            case SURVIVOR -> Items.SHIELD;   // ванільний щит з банером кольору стенда
         };
     }
 
@@ -55,6 +60,35 @@ public final class StandWeapon {
                 EquipmentSlot.MAINHAND);
     }
 
+    private static DyeColor nearestDye(int rgb) {
+        int r = rgb >> 16 & 255, g = rgb >> 8 & 255, b = rgb & 255;
+        DyeColor best = DyeColor.WHITE;
+        double bd = Double.MAX_VALUE;
+        for (DyeColor c : DyeColor.values()) {
+            int f = c.getFireworkColor();
+            int dr = (f >> 16 & 255) - r, dg = (f >> 8 & 255) - g, db = (f & 255) - b;
+            double dd = dr * dr + dg * dg + db * db;
+            if (dd < bd) { bd = dd; best = c; }
+        }
+        return best;
+    }
+
+    /** Ванільний щит: база кольору стенда й облямівка другого кольору (найближчі до них кольори банера). */
+    private static void shieldBanner(ItemStack st, StandData d) {
+        DyeColor base = nearestDye(d.color1), trim = nearestDye(d.color2);
+        NbtCompound be = st.getOrCreateSubNbt("BlockEntityTag");
+        be.putInt("Base", base.getId());
+        if (trim != base) {
+            NbtList pats = new NbtList();
+            NbtCompound pt = new NbtCompound();
+            pt.putString("Pattern", "bo");
+            pt.putInt("Color", trim.getId());
+            pats.add(pt);
+            be.put("Patterns", pats);
+        }
+        st.setCustomName(Text.translatable("item.standgen.stand_shield").setStyle(Style.EMPTY.withItalic(false)));
+    }
+
     public static ItemStack create(StandData d, UUID owner) {
         ItemStack st = new ItemStack(item(d.primary));
         NbtCompound n = st.getOrCreateNbt();
@@ -65,16 +99,16 @@ public final class StandWeapon {
         n.putInt("stage", d.stage);
         n.putBoolean("Unbreakable", true);
         switch (d.primary) {
-            case MINER -> melee(st, 1.5 + d.power * 0.03, 1.2);
-            case FIGHTER -> melee(st, 2.5 + d.power * 0.04, 1.6);
-            case BUILDER -> melee(st, 4.0 + d.power * 0.05, 0.9);
-            case RUNNER -> melee(st, 2.0 + d.power * 0.035, 1.8);
+            case MINER -> melee(st, 0.8 + d.power * 0.015 + d.stage * 0.22, 1.2);
+            case FIGHTER -> melee(st, 1.3 + d.power * 0.02 + d.stage * 0.47, 1.6);
+            case BUILDER -> melee(st, 2.9 + d.power * 0.03 + d.stage * 0.4, 0.9);
+            case RUNNER -> melee(st, 1.2 + d.power * 0.018 + d.stage * 0.27, 1.8);
             case ARCHER -> {
                 st.addEnchantment(Enchantments.INFINITY, 1);
-                int pw = Math.min(4, d.stage / 2);
+                int pw = Math.min(5, d.stage * 5 / 8);
                 if (pw > 0) st.addEnchantment(Enchantments.POWER, pw);
             }
-            case SURVIVOR -> { }
+            case SURVIVOR -> shieldBanner(st, d);
         }
         st.addEnchantment(Enchantments.VANISHING_CURSE, 1);
         return st;

@@ -15,6 +15,7 @@ public final class StandModels {
     public static final EntityModelLayer WORN = new EntityModelLayer(StandGenMod.id("stand_worn"), "main");
     public static final EntityModelLayer WEAPON = new EntityModelLayer(StandGenMod.id("stand_weapon"), "main");
     public static final EntityModelLayer SWARM = new EntityModelLayer(StandGenMod.id("stand_swarm"), "main");
+    public static final EntityModelLayer SUPPORT = new EntityModelLayer(StandGenMod.id("stand_support"), "main");
     public static final int SHARDS = 24;
     public static final int ORBS = 4;
 
@@ -237,6 +238,23 @@ public final class StandModels {
             root.addChild("shard" + i, b().uv(0, 0).cuboid(-2, -2, -2, 4, 4, 4), N);
         }
         root.addChild("core", b().uv(0, 0).cuboid(-3, -3, -3, 6, 6, 6), N);
+        return TexturedModelData.of(md, 64, 64);
+    }
+
+    /** Підтримка: сяюче ядро з крилами, німбом і супутниками. Нічого не б'є. */
+    public static TexturedModelData support() {
+        ModelData md = new ModelData();
+        ModelPartData root = md.getRoot();
+        root.addChild("core", b().uv(0, 0).cuboid(-3, -3, -3, 6, 6, 6), N);
+        root.addChild("wing_l1", b().uv(0, 8).cuboid(0, -0.8f, -0.5f, 12, 1.6f, 1), N);
+        root.addChild("wing_l2", b().uv(0, 8).cuboid(0, -0.7f, -0.5f, 9, 1.4f, 1), N);
+        root.addChild("wing_r1", b().uv(0, 8).cuboid(-12, -0.8f, -0.5f, 12, 1.6f, 1), N);
+        root.addChild("wing_r2", b().uv(0, 8).cuboid(-9, -0.7f, -0.5f, 9, 1.4f, 1), N);
+        root.addChild("halo_f", b().uv(0, 8).cuboid(-6, -0.4f, -6, 12, 0.8f, 1.2f), N);
+        root.addChild("halo_b", b().uv(0, 8).cuboid(-6, -0.4f, 4.8f, 12, 0.8f, 1.2f), N);
+        root.addChild("halo_l", b().uv(0, 8).cuboid(-6, -0.4f, -4.8f, 1.2f, 0.8f, 9.6f), N);
+        root.addChild("halo_r", b().uv(0, 8).cuboid(4.8f, -0.4f, -4.8f, 1.2f, 0.8f, 9.6f), N);
+        for (int i = 0; i < 3; i++) root.addChild("sat" + i, b().uv(0, 0).cuboid(-1.5f, -1.5f, -1.5f, 3, 3, 3), N);
         return TexturedModelData.of(md, 64, 64);
     }
 }

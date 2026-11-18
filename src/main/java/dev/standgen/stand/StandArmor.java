@@ -42,9 +42,9 @@ public final class StandArmor {
     public static boolean isStandArmor(ItemStack s) { return s.getItem() instanceof StandArmorItem; }
 
     public static ItemStack create(StandData d, int i) {
-        double armor = Math.min(20.0, 3.0 + d.durability * 0.12 + d.stage * 0.5);
-        double toughness = d.durability * 0.03;
-        double knockback = Math.min(0.4, d.durability / 250.0);
+        double armor = Math.min(20.0, 2.0 + d.durability * 0.07 + d.stage * 1.1);
+        double toughness = d.durability * 0.02 + d.stage * 0.3;
+        double knockback = Math.min(0.3, d.durability / 400.0 + d.stage * 0.01);
 
         ItemStack st = new ItemStack(item(i));
         NbtCompound n = st.getOrCreateNbt();
@@ -66,7 +66,7 @@ public final class StandArmor {
                 new EntityAttributeModifier(id, "Stand armor knockback", knockback / 4.0, EntityAttributeModifier.Operation.ADDITION), slot);
         if (slot == EquipmentSlot.CHEST) {   // сила стенда підсилює власні удари гравця
             st.addAttributeModifier(EntityAttributes.GENERIC_ATTACK_DAMAGE,
-                    new EntityAttributeModifier(id, "Stand armor power", d.power * 0.012, EntityAttributeModifier.Operation.ADDITION), slot);
+                    new EntityAttributeModifier(id, "Stand armor power", d.power * 0.008 + d.stage * 0.05, EntityAttributeModifier.Operation.ADDITION), slot);
         }
         st.addEnchantment(Enchantments.BINDING_CURSE, 1);
         st.addEnchantment(Enchantments.VANISHING_CURSE, 1);

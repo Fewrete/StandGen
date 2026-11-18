@@ -104,5 +104,16 @@
   "item.standgen.stand_bow": "Лук стенда",
   "item.standgen.stand_shield": "Щит стенда",
   "item.standgen.stand_weapon.tooltip": "Частина твого стенда. Зникає, коли перейдеш в авто-режим або відкличеш стенд.",
-  "msg.standgen.free_slot": "Спершу звільни комірку хотбара: зброя видається як предмет"
+  "msg.standgen.free_slot": "Спершу звільни комірку хотбара: зброя видається як предмет",
+  "standgen.form.support": "Підтримка",
+  "standgen.skill.prospect": "Чуття руди",
+  "standgen.skill.rally": "Заклик",
+  "standgen.skill.fortify": "Зміцнення",
+  "standgen.skill.tailwind": "Попутний вітер",
+  "standgen.skill.scout": "Розвідка",
+  "standgen.skill.mend": "Зцілення",
+  "standgen.skill.purify": "Очищення",
+  "standgen.skill.sanctuary": "Святилище",
+  "msg.standgen.support_passive": "Пасивка: Магніт душі (притягує предмети до тебе; вимикається в ручному режимі). Цей стенд не атакує.",
+  "msg.standgen.ores_found": "Відчуто руди: %s"
 }

@@ -89,8 +89,6 @@ public class StandGenMod implements ModInitializer {
             new StandWeaponItems.Spear(new FabricItemSettings().maxCount(1).fireproof()));
     public static final Item STAND_BOW = Registry.register(Registries.ITEM, id("stand_bow"),
             new StandWeaponItems.Bow(new FabricItemSettings().maxCount(1).fireproof()));
-    public static final Item STAND_SHIELD = Registry.register(Registries.ITEM, id("stand_shield"),
-            new StandWeaponItems.Shield(new FabricItemSettings().maxCount(1).fireproof()));
 
     public static final EntityType<StandEntity> STAND = Registry.register(Registries.ENTITY_TYPE, id("stand"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, StandEntity::new)
@@ -205,20 +203,26 @@ public class StandGenMod implements ModInitializer {
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
                 StandData d = m.get(p.getUuid());
                 if (d == null) continue;
-                int ns = Progression.stage(p);
+                int mask = Progression.mask(p);
+                int ns = Integer.bitCount(mask);
                 if (ns > d.stage) {
+                    int old = d.stage;
                     d.stage = ns;
+                    d.milestones = mask;
                     d.recalc();
                     m.markDirty();
-                    StandRuntime.refreshArmor(p, d);
-                    p.sendMessage(Text.translatable("msg.standgen.evolved", ns, Progression.stageText(ns))
+                    StandRuntime.refreshItems(p, d);
+                    p.sendMessage(Text.translatable("msg.standgen.evolved", ns, Progression.labelText(mask))
                             .formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
                     for (int slot = 1; slot < 4; slot++) {
-                        if (d.unlockStage(slot) == ns) {
+                        if (d.unlockStage(slot) > old && d.unlockStage(slot) <= ns) {
                             p.sendMessage(Text.translatable("msg.standgen.skill_unlocked", d.skill(slot).text())
                                     .formatted(Formatting.GREEN));
                         }
                     }
+                } else if (ns == d.stage && mask != d.milestones) {
+                    d.milestones = mask;   // стадія та сама, лише виправляємо назву етапу
+                    m.markDirty();
                 }
             }
         });
@@ -267,9 +271,10 @@ public class StandGenMod implements ModInitializer {
                                         return 0;
                                     }
                                     d.stage = IntegerArgumentType.getInteger(ctx, "n");
+                                    d.milestones = (1 << d.stage) - 1;
                                     d.recalc();
                                     m.markDirty();
-                                    StandRuntime.refreshArmor(p, d);
+                                    StandRuntime.refreshItems(p, d);
                                     ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.stage_set", d.stage), false);
                                     return 1;
                                 })))));

@@ -104,5 +104,16 @@
   "item.standgen.stand_bow": "Stand-Bogen",
   "item.standgen.stand_shield": "Stand-Schild",
   "item.standgen.stand_weapon.tooltip": "Teil deines Stands. Verschwindet beim Wechsel in den Automodus oder wenn du den Stand entlässt.",
-  "msg.standgen.free_slot": "Mach zuerst einen Hotbar-Platz frei: Die Waffe wird als Gegenstand ausgegeben"
+  "msg.standgen.free_slot": "Mach zuerst einen Hotbar-Platz frei: Die Waffe wird als Gegenstand ausgegeben",
+  "standgen.form.support": "Unterstützung",
+  "standgen.skill.prospect": "Erzspürsinn",
+  "standgen.skill.rally": "Sammelruf",
+  "standgen.skill.fortify": "Befestigen",
+  "standgen.skill.tailwind": "Rückenwind",
+  "standgen.skill.scout": "Aufklärung",
+  "standgen.skill.mend": "Heilung",
+  "standgen.skill.purify": "Reinigung",
+  "standgen.skill.sanctuary": "Zuflucht",
+  "msg.standgen.support_passive": "Passiv: Seelenmagnet (zieht Gegenstände zu dir; im manuellen Modus aus). Dieser Stand greift nicht an.",
+  "msg.standgen.ores_found": "Erze gespürt: %s"
 }

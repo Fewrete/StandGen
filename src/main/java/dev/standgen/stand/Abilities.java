@@ -1,13 +1,16 @@
 package dev.standgen.stand;
 
 import dev.standgen.entity.StandEntity;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.effect.StatusEffect;
+import net.minecraft.entity.effect.StatusEffectCategory;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.passive.TameableEntity;
@@ -18,6 +21,8 @@ import net.minecraft.particle.DustColorTransitionParticleEffect;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
@@ -33,7 +38,9 @@ import net.minecraft.util.math.Vec3d;
 
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public final class Abilities {
@@ -96,6 +103,67 @@ public final class Abilities {
         return best;
     }
 
+    // ---------------- форма Підтримка: допоміжні ----------------
+    private static final List<TagKey<Block>> ORE_TAGS = List.of(BlockTags.COAL_ORES, BlockTags.IRON_ORES, BlockTags.COPPER_ORES,
+            BlockTags.GOLD_ORES, BlockTags.REDSTONE_ORES, BlockTags.LAPIS_ORES, BlockTags.EMERALD_ORES, BlockTags.DIAMOND_ORES);
+
+    private static boolean isOre(BlockState st) {
+        for (TagKey<Block> t : ORE_TAGS) if (st.isIn(t)) return true;
+        return st.isOf(Blocks.ANCIENT_DEBRIS) || st.isOf(Blocks.NETHER_GOLD_ORE) || st.isOf(Blocks.NETHER_QUARTZ_ORE);
+    }
+
+    /** Гравець і всі гравці в радіусі (спостерігачі не рахуються). */
+    private static List<ServerPlayerEntity> allies(ServerWorld w, ServerPlayerEntity p, double r) {
+        return w.getPlayers(x -> !x.isSpectator() && x.squaredDistanceTo(p) <= r * r);
+    }
+
+    private static void cleanse(ServerPlayerEntity a) {
+        for (StatusEffectInstance e : new ArrayList<>(a.getStatusEffects())) {
+            if (e.getEffectType().getCategory() == StatusEffectCategory.HARMFUL) a.removeStatusEffect(e.getEffectType());
+        }
+    }
+
+    private static void supportBurst(ServerWorld w, ServerPlayerEntity p, StandData d, double r) {
+        DustColorTransitionParticleEffect fx = new DustColorTransitionParticleEffect(rgb(d.color1), rgb(d.color2), 1.4f);
+        ring(w, fx, p.getPos(), r * 0.5, 24);
+        ring(w, fx, p.getPos(), r, 40);
+        w.spawnParticles(ParticleTypes.END_ROD, p.getX(), p.getY() + 1.2, p.getZ(), 12, 0.5, 0.7, 0.5, 0.03);
+        sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.4f);
+    }
+
+    /** Чуття руди: Поспіх, нічний зір і частинки на всіх рудах навколо (бачить лише власник). */
+    private static boolean oreSense(ServerPlayerEntity p, ServerWorld w, StandData d) {
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 600, 1));
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 600, 0));
+        int r = Math.min(16, 8 + d.stage * 2);
+        BlockPos c = p.getBlockPos();
+        int found = 0;
+        for (int dx = -r; dx <= r; dx++)
+            for (int dy = -r; dy <= r; dy++)
+                for (int dz = -r; dz <= r; dz++) {
+                    BlockPos pos = c.add(dx, dy, dz);
+                    if (!isOre(w.getBlockState(pos))) continue;
+                    found++;
+                    if (found <= 80) w.spawnParticles(p, ParticleTypes.END_ROD, true, pos.getX() + 0.5, pos.getY() + 0.5,
+                            pos.getZ() + 0.5, 4, 0.3, 0.3, 0.3, 0.02);
+                }
+        p.sendMessage(Text.translatable("msg.standgen.ores_found", found).formatted(Formatting.AQUA), true);
+        supportBurst(w, p, d, 4);
+        return true;
+    }
+
+    /** Розвідка: підсвічує ворогів навколо й дає нічний зір. */
+    private static boolean scout(ServerPlayerEntity p, ServerWorld w, StandData d) {
+        double r = 20 + d.range * 0.2;
+        for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r),
+                x -> x instanceof Monster && x.isAlive() && x.squaredDistanceTo(p) <= r * r)) {
+            e.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 200, 0));
+        }
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 400, 0));
+        supportBurst(w, p, d, 4);
+        return true;
+    }
+
     // ---------------- виконання ----------------
     /** @return true якщо здібність спрацювала (тоді йде перезарядка) */
     public static boolean execute(Skill s, ServerPlayerEntity p, StandEntity stand, StandData d) {
@@ -124,6 +192,62 @@ public final class Abilities {
             }
             case GRAB -> { return grab(p, w, d); }
             case WALL -> { return false; }   // це перемикач: обробляється в StandRuntime.toggleStance
+            // ---- форма Підтримка: нічого не б'ють, баффають гравця й союзників поруч ----
+            case PROSPECT -> { return oreSense(p, w, d); }
+            case RALLY -> {
+                for (ServerPlayerEntity a : allies(w, p, 10)) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 400, 0));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 400, 0));
+                }
+                supportBurst(w, p, d, 5);
+                return true;
+            }
+            case FORTIFY -> {
+                for (ServerPlayerEntity a : allies(w, p, 8)) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 400, Math.min(2, 1 + d.stage / 4)));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 0));
+                }
+                supportBurst(w, p, d, 4);
+                return true;
+            }
+            case TAILWIND -> {
+                for (ServerPlayerEntity a : allies(w, p, 10)) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 400, 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 400, 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 400, 0));
+                }
+                supportBurst(w, p, d, 5);
+                return true;
+            }
+            case SCOUT -> { return scout(p, w, d); }
+            case MEND -> {
+                for (ServerPlayerEntity a : allies(w, p, 8)) {
+                    a.heal(4 + d.stage);
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
+                }
+                supportBurst(w, p, d, 4);
+                w.spawnParticles(ParticleTypes.HEART, p.getX(), p.getY() + 1.4, p.getZ(), 8, 0.6, 0.5, 0.6, 0.1);
+                return true;
+            }
+            case PURIFY -> {
+                for (ServerPlayerEntity a : allies(w, p, 8)) {
+                    cleanse(a);
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 100, 0));
+                }
+                supportBurst(w, p, d, 4);
+                return true;
+            }
+            case SANCTUARY -> {
+                for (ServerPlayerEntity a : allies(w, p, 12)) {
+                    cleanse(a);
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 300, 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 300, 1));
+                }
+                supportBurst(w, p, d, 12);
+                sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, 1f, 1.2f);
+                return true;
+            }
             case THROW -> { return thrust(p, w, d); }
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }

@@ -70,18 +70,4 @@ public final class StandWeaponItems {
         @Override public void inventoryTick(ItemStack st, World w, Entity e, int slot, boolean sel) { validate(st, w, e); }
         @Override public void appendTooltip(ItemStack st, World w, List<Text> t, TooltipContext c) { tip(t); }
     }
-
-    /** Щит (Вижилий): блокує як справжній щит (використання UseAction.BLOCK). */
-    public static class Shield extends Item {
-        public Shield(Settings s) { super(s); }
-        @Override public UseAction getUseAction(ItemStack stack) { return UseAction.BLOCK; }
-        @Override public int getMaxUseTime(ItemStack stack) { return 72000; }
-        @Override
-        public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-            user.setCurrentHand(hand);
-            return TypedActionResult.consume(user.getStackInHand(hand));
-        }
-        @Override public void inventoryTick(ItemStack st, World w, Entity e, int slot, boolean sel) { validate(st, w, e); }
-        @Override public void appendTooltip(ItemStack st, World w, List<Text> t, TooltipContext c) { tip(t); }
-    }
 }

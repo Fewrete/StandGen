@@ -32,6 +32,7 @@ public class StandGenClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(StandModels.WORN, StandModels::worn);
         EntityModelLayerRegistry.registerModelLayer(StandModels.WEAPON, StandModels::weapon);
         EntityModelLayerRegistry.registerModelLayer(StandModels.SWARM, StandModels::swarm);
+        EntityModelLayerRegistry.registerModelLayer(StandModels.SUPPORT, StandModels::support);
         EntityRendererRegistry.register(StandGenMod.STAND, StandRenderer::new);
 
         // броня-стенд: малюється на гравці й фарбується кольорами стенда (з NBT предмета)
@@ -43,7 +44,7 @@ public class StandGenClient implements ClientModInitializer {
         ColorProviderRegistry.ITEM.register((stack, tintIndex) ->
                         stack.hasNbt() && stack.getNbt().contains("c1") ? stack.getNbt().getInt("c1") : 0xFFFFFF,
                 StandGenMod.STAND_PICKAXE, StandGenMod.STAND_SWORD, StandGenMod.STAND_HAMMER,
-                StandGenMod.STAND_SPEAR, StandGenMod.STAND_BOW, StandGenMod.STAND_SHIELD);
+                StandGenMod.STAND_SPEAR, StandGenMod.STAND_BOW);
 
         summon = key("key.standgen.summon", GLFW.GLFW_KEY_R);
         skill1 = key("key.standgen.skill1", GLFW.GLFW_KEY_X);

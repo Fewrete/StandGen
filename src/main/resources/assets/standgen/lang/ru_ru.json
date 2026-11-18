@@ -104,5 +104,16 @@
   "item.standgen.stand_bow": "Лук стенда",
   "item.standgen.stand_shield": "Щит стенда",
   "item.standgen.stand_weapon.tooltip": "Часть твоего стенда. Исчезает, когда перейдёшь в авто-режим или отзовёшь стенд.",
-  "msg.standgen.free_slot": "Сначала освободи ячейку хотбара: оружие выдаётся как предмет"
+  "msg.standgen.free_slot": "Сначала освободи ячейку хотбара: оружие выдаётся как предмет",
+  "standgen.form.support": "Поддержка",
+  "standgen.skill.prospect": "Чутьё руды",
+  "standgen.skill.rally": "Призыв",
+  "standgen.skill.fortify": "Укрепление",
+  "standgen.skill.tailwind": "Попутный ветер",
+  "standgen.skill.scout": "Разведка",
+  "standgen.skill.mend": "Исцеление",
+  "standgen.skill.purify": "Очищение",
+  "standgen.skill.sanctuary": "Святилище",
+  "msg.standgen.support_passive": "Пассив: Магнит души (притягивает предметы к тебе; отключается в ручном режиме). Этот стенд не атакует.",
+  "msg.standgen.ores_found": "Ощущено руды: %s"
 }

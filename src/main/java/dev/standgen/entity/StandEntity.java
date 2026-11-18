@@ -8,6 +8,7 @@ import dev.standgen.stand.StandManager;
 import dev.standgen.stand.StandRuntime;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
@@ -136,11 +137,12 @@ public class StandEntity extends LivingEntity {
         if (d == null) { discard(); return; }
 
         if (age % 20 == 0) applyData(d);
-        if (age % 40 == 0) Abilities.applyPassive(owner, d);
+        if (age % 40 == 0 && d.form != StandForm.SUPPORT) Abilities.applyPassive(owner, d);
 
         int now = w.getServer().getTicks();
         boolean manual = StandRuntime.isManual(ownerId);
-        boolean holding = manual && StandRuntime.isHolding(ownerId, now);
+        boolean support = d.form == StandForm.SUPPORT;
+        boolean holding = manual && !support && StandRuntime.isHolding(ownerId, now);
         boolean swarm = d.form == StandForm.SWARM;
         double fullLeash = d.leash();
         // в авто-режимі стенд тримається ближче до власника (крім Рою)
@@ -169,6 +171,8 @@ public class StandEntity extends LivingEntity {
                 }
             }
         }
+
+        if (support) { target = null; barrageTicks = 0; }   // стенд підтримки нічого не б'є
 
         // ---- рух ----
         Vec3d goal;
@@ -219,6 +223,19 @@ public class StandEntity extends LivingEntity {
             }
         }
         if (barrageTicks > 0) barrageTicks--;
+
+        // Пасивка Підтримки "Магніт душі": тягне предмети до власника (вимикається в ручному режимі)
+        if (support && !manual && age % 4 == 0) {
+            double mr = 4.0 + d.stage * 0.5;
+            Vec3d pull = owner.getPos().add(0, 0.6, 0);
+            for (ItemEntity it : w.getEntitiesByClass(ItemEntity.class, owner.getBoundingBox().expand(mr),
+                    x -> x.getItemAge() > 45)) {
+                Vec3d dir = pull.subtract(it.getPos());
+                if (dir.lengthSquared() < 0.25) continue;
+                it.setVelocity(dir.normalize().multiply(0.3));
+                it.velocityModified = true;
+            }
+        }
 
         // ---- візуальні деталі: ефект від типу душі, слід зі стадії 3 ----
         if (d.stage >= 1 && age % 8 == 0) {

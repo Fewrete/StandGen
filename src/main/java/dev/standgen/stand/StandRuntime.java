@@ -145,6 +145,20 @@ public final class StandRuntime {
         if (ARMOR_ON.contains(p.getUuid())) equipArmor(p, d);
     }
 
+    /** Оновити показники зброї в руках після еволюції (комірка та сама). */
+    public static void refreshWeapon(ServerPlayerEntity p, StandData d) {
+        if (!WEAPON_HELD.contains(p.getUuid())) return;
+        var inv = p.getInventory();
+        for (int i = 0; i < inv.size(); i++)
+            if (StandWeapon.isStandWeapon(inv.getStack(i))) inv.setStack(i, StandWeapon.create(d, p.getUuid()));
+    }
+
+    /** Усі предмети-стенди (броня й зброя) ростуть разом зі стадією. */
+    public static void refreshItems(ServerPlayerEntity p, StandData d) {
+        refreshArmor(p, d);
+        refreshWeapon(p, d);
+    }
+
     private static void toggleArmor(ServerPlayerEntity p, StandData d) {
         UUID id = p.getUuid();
         if (ARMOR_ON.contains(id)) {

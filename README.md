@@ -1,4 +1,4 @@
-# StandGen 0.2.2b (Fabric 1.20.1)
+# StandGen 0.2.3 (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -37,12 +37,12 @@ MANUAL: the stand only follows you and attacks while Z is held.
   Small details (horns, crest, spikes, lamp, halo, quiver...) depend on your type and a seed.
 - **16 skills:** 6 by type, 4 by form, 6 ultimates (one per main type).
 
-## Weapon form
-- **Auto mode:** the weapon floats beside you and fights on its own.
-- **Manual mode (G):** the stand becomes a real tool in your hands: Miner pickaxe, Fighter sword, Builder hammer (a heavy axe),
-  Traveler spear, Archer bow (infinite arrows) and Survivor shield (blocks like a shield). Damage scales with the stand's power.
-  You need a free hotbar slot. The tool disappears when you switch back to auto mode or dismiss the stand, and it cannot be kept in chests.
-- **Dash** range depends on the stand's speed and leaves a trail in your stand's colors along the whole distance.
+## Support form
+A stand that never attacks. It only helps you and the players near you.
+- **Passive:** Soul Magnet pulls dropped items toward you (turn it off by switching to manual mode with G).
+- **Skills** (buffs apply to you and every player in range): Ore Sense (Miner), Rally (Fighter), Fortify (Builder), Tailwind (Traveler),
+  Scout (Archer), Mend (Survivor) for the two soul-type slots; Purify for the form slot; Sanctuary as the ultimate.
+- Its stage name now follows the furthest milestone you reached, so entering the Nether early no longer shows "Diamonds".
 
 ## Multiplayer
 - A player who has no stand **cannot see other players' stands** (the figure, the armor and its particles). Spectators see everything.

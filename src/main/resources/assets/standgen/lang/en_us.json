@@ -104,5 +104,16 @@
   "item.standgen.stand_bow": "Stand Bow",
   "item.standgen.stand_shield": "Stand Shield",
   "item.standgen.stand_weapon.tooltip": "Part of your stand. Disappears when you switch to auto mode or dismiss the stand.",
-  "msg.standgen.free_slot": "Free a hotbar slot first: the weapon is given to you as an item"
+  "msg.standgen.free_slot": "Free a hotbar slot first: the weapon is given to you as an item",
+  "standgen.form.support": "Support",
+  "standgen.skill.prospect": "Ore Sense",
+  "standgen.skill.rally": "Rally",
+  "standgen.skill.fortify": "Fortify",
+  "standgen.skill.tailwind": "Tailwind",
+  "standgen.skill.scout": "Scout",
+  "standgen.skill.mend": "Mend",
+  "standgen.skill.purify": "Purify",
+  "standgen.skill.sanctuary": "Sanctuary",
+  "msg.standgen.support_passive": "Passive: Soul Magnet (pulls nearby items to you; off in manual mode). This stand does not attack.",
+  "msg.standgen.ores_found": "Ores sensed: %s"
 }

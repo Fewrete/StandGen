@@ -28,17 +28,21 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         for (int i = 0; i < ORB_NAMES.length; i++) ORB_NAMES[i] = "orb" + i;
     }
 
-    private final ModelPart humanoid, weapon, swarm;
+    private final ModelPart humanoid, weapon, swarm, supportModel;
 
     public StandRenderer(EntityRendererFactory.Context ctx) {
         super(ctx);
         this.humanoid = ctx.getPart(StandModels.HUMANOID);
         this.weapon = ctx.getPart(StandModels.WEAPON);
         this.swarm = ctx.getPart(StandModels.SWARM);
+        this.supportModel = ctx.getPart(StandModels.SUPPORT);
     }
 
     @Override
     public Identifier getTexture(StandEntity entity) { return TEXTURE; }
+
+    private static final String[] WING_NAMES = {"wing_l1", "wing_l2", "wing_r1", "wing_r2"};
+    private static final String[] HALO_NAMES = {"halo_f", "halo_b", "halo_l", "halo_r"};
 
     private static float[] rgb(int c) {
         return new float[]{(c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f};
@@ -68,6 +72,7 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
                 renderWeapon(e, age, m, vc, l, c1, c2, stage);
             }
             case SWARM -> renderSwarm(e, age, m, vc, l, c1, c2, stage);
+            case SUPPORT -> renderSupport(age, m, vc, c1, c2, l, stage);
             default -> {
                 float sx = e.getBulk();
                 m.scale(sx, e.getHeightScale(), sx);
@@ -208,5 +213,47 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         core.pitch = age * 0.05f;
         core.yaw = age * 0.08f;
         core.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c2[0], c2[1], c2[2], 0.95f);
+    }
+
+    // ---------------- Підтримка ----------------
+    private void renderSupport(float age, MatrixStack m, VertexConsumer vc, float[] c1, float[] c2, int l, int stage) {
+        float k = 0.9f + stage * 0.04f;
+        m.scale(k, k, k);
+        m.translate(0.0f, -1.1f, 0.0f);
+        float bob = MathHelper.sin(age * 0.1f) * 1.5f;
+
+        ModelPart core = supportModel.getChild("core");
+        core.pivotX = 0f; core.pivotY = bob; core.pivotZ = 0f;
+        core.pitch = age * 0.04f; core.yaw = age * 0.06f;
+        core.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c1[0], c1[1], c1[2], 0.95f);
+
+        float flap = MathHelper.sin(age * 0.25f) * 0.35f;
+        for (int i = 0; i < WING_NAMES.length; i++) {
+            ModelPart wg = supportModel.getChild(WING_NAMES[i]);
+            boolean left = i < 2;
+            float base = (i % 2 == 0) ? 0.45f : 0.1f;
+            wg.pivotX = left ? 3f : -3f;
+            wg.pivotY = bob + (i % 2 == 0 ? -1f : 2f);
+            wg.pivotZ = 0f;
+            wg.roll = (left ? -1f : 1f) * (base + flap);
+            wg.render(m, vc, l, OverlayTexture.DEFAULT_UV, c1[0], c1[1], c1[2], 0.9f);
+        }
+
+        for (String name : HALO_NAMES) {
+            ModelPart h = supportModel.getChild(name);
+            h.pivotX = 0f; h.pivotY = bob - 9f; h.pivotZ = 0f;
+            h.yaw = age * 0.05f;
+            h.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c2[0], c2[1], c2[2], 0.9f);
+        }
+
+        for (int i = 0; i < 3; i++) {
+            ModelPart s = supportModel.getChild("sat" + i);
+            float a = age * 0.07f + i * MathHelper.TAU / 3f;
+            s.pivotX = MathHelper.cos(a) * 13f;
+            s.pivotY = bob + MathHelper.sin(age * 0.1f + i) * 3f;
+            s.pivotZ = MathHelper.sin(a) * 13f;
+            s.pitch = age * 0.1f; s.yaw = age * 0.12f;
+            s.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c2[0], c2[1], c2[2], 0.9f);
+        }
     }
 }

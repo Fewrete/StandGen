@@ -42,7 +42,9 @@ public final class StandGenerator {
         d.secondary = Archetype.values()[idx[1]];
         String[] nouns = NOUN[d.primary.ordinal()];
         d.name = PREFIX[r.nextInt(PREFIX.length)] + " " + nouns[r.nextInt(nouns.length)];
-        d.stage = Progression.stage(p);
+        d.milestones = Progression.mask(p);
+        d.stage = Integer.bitCount(d.milestones);
+        d.rollForm();
         d.recalc();
         return d;
     }

@@ -31,14 +31,24 @@ public final class Progression {
         if (!MILESTONES.contains(id)) MILESTONES.add(id);
     }
 
-    public static int stage(ServerPlayerEntity p) {
-        int n = 0;
+    /** Бітова маска виконаних віх (біт i = i-та віха зі списку). */
+    public static int mask(ServerPlayerEntity p) {
+        int m = 0;
         var loader = p.getServer().getAdvancementLoader();
-        for (Identifier id : MILESTONES) {
-            Advancement a = loader.get(id);
-            if (a != null && p.getAdvancementTracker().getProgress(a).isDone()) n++;
+        for (int i = 0; i < MILESTONES.size() && i < 31; i++) {
+            Advancement a = loader.get(MILESTONES.get(i));
+            if (a != null && p.getAdvancementTracker().getProgress(a).isDone()) m |= 1 << i;
         }
-        return n;
+        return m;
+    }
+
+    /** Стадія = кількість виконаних віх. */
+    public static int stage(ServerPlayerEntity p) { return Integer.bitCount(mask(p)); }
+
+    /** Назва етапу = найвища досягнута віха (Нижній світ до алмазів не перетворюється на "Алмази"). */
+    public static Text labelText(int mask) {
+        int hi = mask == 0 ? 0 : 32 - Integer.numberOfLeadingZeros(mask);
+        return Text.translatable("standgen.stage." + Math.min(hi, 8));
     }
 
     public static Text stageText(int stage) {
