@@ -1,4 +1,4 @@
-# StandGen 0.2.3 (Fabric 1.20.1)
+# StandGen 0.2.3b (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -38,11 +38,11 @@ MANUAL: the stand only follows you and attacks while Z is held.
 - **16 skills:** 6 by type, 4 by form, 6 ultimates (one per main type).
 
 ## Support form
-A stand that never attacks. It only helps you and the players near you.
+A stand that never attacks. It is worn **on your back** (a pack with wings and a halo behind your head) and helps you and the players near you.
 - **Passive:** Soul Magnet pulls dropped items toward you (turn it off by switching to manual mode with G).
 - **Skills** (buffs apply to you and every player in range): Ore Sense (Miner), Rally (Fighter), Fortify (Builder), Tailwind (Traveler),
   Scout (Archer), Mend (Survivor) for the two soul-type slots; Purify for the form slot; Sanctuary as the ultimate.
-- Its stage name now follows the furthest milestone you reached, so entering the Nether early no longer shows "Diamonds".
+- Only players who have a stand can see it.
 
 ## Multiplayer
 - A player who has no stand **cannot see other players' stands** (the figure, the armor and its particles). Spectators see everything.

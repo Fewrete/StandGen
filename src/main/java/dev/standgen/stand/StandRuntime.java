@@ -2,6 +2,12 @@ package dev.standgen.stand;
 
 import dev.standgen.StandGenMod;
 import dev.standgen.entity.StandEntity;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
@@ -37,18 +43,19 @@ public final class StandRuntime {
     private static final Map<UUID, Integer> BARRAGE = new HashMap<>();  // до якого тіка триває серія ударів броні
     private static final Map<UUID, Integer> NEXT_HIT = new HashMap<>();
     private static final Set<UUID> WEAPON_HELD = new HashSet<>();   // форма Зброя в ручному режимі: інструмент у руках
+    private static final Set<UUID> SUPPORT_ON = new HashSet<>();   // форма Підтримка: стенд на спині ввімкнено
     private static final Set<UUID> STANCE = new HashSet<>();   // перемикана пасивка Броньована стійка
 
     private StandRuntime() {}
 
     public static void clear() {
         ACTIVE.clear(); COOLDOWN.clear(); MANUAL.clear(); HOLD.clear(); REVIVE.clear();
-        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear(); WEAPON_HELD.clear();
+        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear(); WEAPON_HELD.clear(); SUPPORT_ON.clear();
     }
 
     public static void forget(UUID id) {
         ACTIVE.remove(id); COOLDOWN.remove(id); MANUAL.remove(id); HOLD.remove(id); REVIVE.remove(id);
-        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id); WEAPON_HELD.remove(id);
+        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id); WEAPON_HELD.remove(id); SUPPORT_ON.remove(id);
     }
 
     public static StandEntity getStand(ServerPlayerEntity p) {
@@ -145,6 +152,73 @@ public final class StandRuntime {
         if (ARMOR_ON.contains(p.getUuid())) equipArmor(p, d);
     }
 
+    // ================= Підтримка: стенд на спині =================
+    public static boolean isSupportOn(UUID id) { return SUPPORT_ON.contains(id); }
+
+    private static PacketByteBuf supportBuf(ServerPlayerEntity p, StandData d, boolean on) {
+        PacketByteBuf b = PacketByteBufs.create();
+        b.writeUuid(p.getUuid());
+        b.writeBoolean(on);
+        if (on) {
+            b.writeInt(d.color1); b.writeInt(d.color2); b.writeInt(d.stage); b.writeInt(d.style); b.writeInt(d.primary.ordinal());
+        }
+        return b;
+    }
+
+    /** Повідомляє власнику й усім, хто його бачить, що стенд на спині ввімкнено чи вимкнено. */
+    private static void broadcastSupport(ServerPlayerEntity p, StandData d, boolean on) {
+        ServerPlayNetworking.send(p, StandGenMod.SUPPORT_BACK, supportBuf(p, d, on));
+        for (ServerPlayerEntity v : PlayerLookup.tracking(p)) {
+            ServerPlayNetworking.send(v, StandGenMod.SUPPORT_BACK, supportBuf(p, d, on));
+        }
+    }
+
+    /** Новому глядачеві, що почав бачити власника, передаємо стан стенда на спині. */
+    public static void sendSupportTo(ServerPlayerEntity owner, ServerPlayerEntity viewer) {
+        if (!SUPPORT_ON.contains(owner.getUuid())) return;
+        StandData d = StandManager.get(owner.getServer()).get(owner.getUuid());
+        if (d != null) ServerPlayNetworking.send(viewer, StandGenMod.SUPPORT_BACK, supportBuf(owner, d, true));
+    }
+
+    private static void refreshSupport(ServerPlayerEntity p, StandData d) {
+        if (SUPPORT_ON.contains(p.getUuid())) broadcastSupport(p, d, true);
+    }
+
+    private static void toggleSupport(ServerPlayerEntity p, StandData d) {
+        UUID id = p.getUuid();
+        if (SUPPORT_ON.remove(id)) {
+            broadcastSupport(p, d, false);
+            msg(p, "msg.standgen.dismissed", Formatting.GRAY);
+            return;
+        }
+        SUPPORT_ON.add(id);
+        broadcastSupport(p, d, true);
+        msg(p, Text.literal(d.name), Formatting.GOLD);
+    }
+
+    /** Пасивка Підтримки "Магніт душі" (вимикається в ручному режимі) і легкі частинки для власників стендів. */
+    private static void supportTick(ServerPlayerEntity p, StandData d, int now) {
+        ServerWorld w = (ServerWorld) p.getWorld();
+        if (!MANUAL.contains(p.getUuid()) && now % 4 == 0) {
+            double mr = 4.0 + d.stage * 0.5;
+            Vec3d pull = p.getPos().add(0, 0.6, 0);
+            for (ItemEntity it : w.getEntitiesByClass(ItemEntity.class, p.getBoundingBox().expand(mr), x -> x.getItemAge() > 45)) {
+                Vec3d dir = pull.subtract(it.getPos());
+                if (dir.lengthSquared() < 0.25) continue;
+                it.setVelocity(dir.normalize().multiply(0.3));
+                it.velocityModified = true;
+            }
+        }
+        if (d.stage >= 1 && now % 12 == 0) {
+            StandManager m = StandManager.get(p.getServer());
+            for (ServerPlayerEntity v : w.getPlayers()) {
+                if (v.squaredDistanceTo(p) < 1024 && m.get(v.getUuid()) != null) {
+                    w.spawnParticles(v, ParticleTypes.END_ROD, false, p.getX(), p.getY() + 1.3, p.getZ(), 1, 0.3, 0.5, 0.3, 0.01);
+                }
+            }
+        }
+    }
+
     /** Оновити показники зброї в руках після еволюції (комірка та сама). */
     public static void refreshWeapon(ServerPlayerEntity p, StandData d) {
         if (!WEAPON_HELD.contains(p.getUuid())) return;
@@ -157,6 +231,7 @@ public final class StandRuntime {
     public static void refreshItems(ServerPlayerEntity p, StandData d) {
         refreshArmor(p, d);
         refreshWeapon(p, d);
+        refreshSupport(p, d);
     }
 
     private static void toggleArmor(ServerPlayerEntity p, StandData d) {
@@ -200,6 +275,7 @@ public final class StandRuntime {
         if (was || hasStandArmor(p)) stripArmor(p);
         WEAPON_HELD.remove(p.getUuid());
         stripWeapon(p);
+        if (SUPPORT_ON.remove(p.getUuid())) broadcastSupport(p, null, false);
     }
 
     /** Щотіка: чистка загублених предметів броні, пасивки й ближній бій броні. */
@@ -219,13 +295,15 @@ public final class StandRuntime {
             boolean armor = ARMOR_ON.contains(id);
             boolean weapon = WEAPON_HELD.contains(id);
             if (!armor) STANCE.remove(id);
-            if (!armor && !weapon) continue;
+            boolean support = SUPPORT_ON.contains(id);
+            if (!armor && !weapon && !support) continue;
             StandData d = mgr.get(id);
             if (d == null) {
                 stripArmor(p); stripWeapon(p);
-                ARMOR_ON.remove(id); WEAPON_HELD.remove(id); STANCE.remove(id);
+                ARMOR_ON.remove(id); WEAPON_HELD.remove(id); STANCE.remove(id); SUPPORT_ON.remove(id);
                 continue;
             }
+            if (support) { supportTick(p, d, now); continue; }   // Підтримка нічого не б'є
             boolean stance = armor && STANCE.contains(id);
             if (stance && now % 10 == 0) {
                 // Стійка: Опір IV (як було) ціною Уповільнення II. Ефекти короткі й оновлюються, тож зникають одразу після вимкнення.
@@ -281,6 +359,7 @@ public final class StandRuntime {
             return;
         }
         if (d.form == StandForm.ARMORED) { toggleArmor(p, d); return; }
+        if (d.form == StandForm.SUPPORT) { toggleSupport(p, d); return; }
         if (d.form == StandForm.WEAPON && MANUAL.contains(p.getUuid())) {
             UUID id = p.getUuid();
             if (WEAPON_HELD.contains(id)) {
@@ -354,7 +433,9 @@ public final class StandRuntime {
         StandData d = StandManager.get(p.getServer()).get(p.getUuid());
         if (d == null) { msg(p, "msg.standgen.no_stand", Formatting.RED); return; }
         StandEntity s = null;
-        if (d.form == StandForm.ARMORED) {
+        if (d.form == StandForm.SUPPORT) {
+            if (!SUPPORT_ON.contains(p.getUuid())) { msg(p, "msg.standgen.summon_first", Formatting.RED); return; }
+        } else if (d.form == StandForm.ARMORED) {
             if (!ARMOR_ON.contains(p.getUuid())) { msg(p, "msg.standgen.summon_first", Formatting.RED); return; }
         } else {
             s = getStand(p);

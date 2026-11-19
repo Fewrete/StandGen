@@ -16,6 +16,7 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.fabricmc.fabric.api.item.v1.FabricItemSettings;
 import net.fabricmc.fabric.api.loot.v2.LootTableEvents;
+import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -54,6 +55,8 @@ public class StandGenMod implements ModInitializer {
     public static final Identifier ACTION = new Identifier(MOD_ID, "action");
     /** Сервер -> клієнт: чи є в цього гравця стенд (без стенда чужі стенди не рендеряться). */
     public static final Identifier HAS_STAND = new Identifier(MOD_ID, "has_stand");
+    /** Сервер -> клієнт: стенд Підтримка на спині цього гравця ввімкнено/вимкнено (+ кольори). */
+    public static final Identifier SUPPORT_BACK = new Identifier(MOD_ID, "support_back");
 
     /** Коди дій з клієнта. */
     public static final int ACT_SUMMON = 0, ACT_SKILL1 = 1, ACT_SKILL2 = 2, ACT_SKILL3 = 3, ACT_SKILL4 = 4,
@@ -227,6 +230,9 @@ public class StandGenMod implements ModInitializer {
             }
         });
 
+        EntityTrackingEvents.START_TRACKING.register((tracked, viewer) -> {
+            if (tracked instanceof ServerPlayerEntity owner) StandRuntime.sendSupportTo(owner, viewer);
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 sendHasStand(handler.player, StandManager.get(server).get(handler.player.getUuid()) != null));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> { StandRuntime.dismiss(handler.player); StandRuntime.forget(handler.player.getUuid()); });

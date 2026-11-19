@@ -15,7 +15,7 @@ public final class StandModels {
     public static final EntityModelLayer WORN = new EntityModelLayer(StandGenMod.id("stand_worn"), "main");
     public static final EntityModelLayer WEAPON = new EntityModelLayer(StandGenMod.id("stand_weapon"), "main");
     public static final EntityModelLayer SWARM = new EntityModelLayer(StandGenMod.id("stand_swarm"), "main");
-    public static final EntityModelLayer SUPPORT = new EntityModelLayer(StandGenMod.id("stand_support"), "main");
+    public static final EntityModelLayer BACK = new EntityModelLayer(StandGenMod.id("stand_back"), "main");
     public static final int SHARDS = 24;
     public static final int ORBS = 4;
 
@@ -191,15 +191,15 @@ public final class StandModels {
         ModelPartData pick = root.addChild("pick", b(), N);
         pick.addChild("shaft", b().uv(0, 0).cuboid(-1, -26, -1, 2, 34, 2), N);
         pick.addChild("head", b().uv(8, 0).cuboid(-12, -28, -1.5f, 24, 3, 3), N);
-        pick.addChild("tip_l", b().uv(8, 8).cuboid(-13.5f, -28, -1, 2, 8, 2), N);
-        pick.addChild("tip_r", b().uv(8, 8).cuboid(11.5f, -28, -1, 2, 8, 2), N);
+        pick.addChild("tip_l", b().uv(0, 0).cuboid(-13.5f, -28, -1, 2, 8, 2), N);
+        pick.addChild("tip_r", b().uv(0, 0).cuboid(11.5f, -28, -1, 2, 8, 2), N);
 
         ModelPartData sword = root.addChild("sword", b(), N);
-        sword.addChild("blade", b().uv(0, 0).cuboid(-2, -30, -0.5f, 4, 26, 1), N);
+        sword.addChild("blade", b().uv(16, 0).cuboid(-2, -30, -0.5f, 4, 26, 1), N);
         sword.addChild("tip", b().uv(0, 0).cuboid(-1, -33, -0.5f, 2, 3, 1), N);
         sword.addChild("guard", b().uv(8, 0).cuboid(-7, -4, -1.5f, 14, 2.5f, 3), N);
         sword.addChild("grip", b().uv(0, 8).cuboid(-1, -2, -1, 2, 8, 2), N);
-        sword.addChild("pommel", b().uv(0, 8).cuboid(-1.5f, 6, -1.5f, 3, 2.5f, 3), N);
+        sword.addChild("pommel", b().uv(0, 0).cuboid(-1.5f, 6, -1.5f, 3, 2.5f, 3), N);
 
         ModelPartData hammer = root.addChild("hammer", b(), N);
         hammer.addChild("shaft", b().uv(0, 0).cuboid(-1, -22, -1, 2, 32, 2), N);
@@ -207,19 +207,19 @@ public final class StandModels {
         hammer.addChild("cap", b().uv(0, 16).cuboid(-1.5f, 10, -1.5f, 3, 3, 3), N);
 
         ModelPartData spear = root.addChild("spear", b(), N);
-        spear.addChild("shaft", b().uv(0, 0).cuboid(-0.75f, -34, -0.75f, 1.5f, 48, 1.5f), N);
-        spear.addChild("ring", b().uv(0, 8).cuboid(-1.5f, -30, -1.5f, 3, 2, 3), N);
-        spear.addChild("tip", b().uv(8, 8).cuboid(-2.5f, -2.5f, -0.5f, 5, 5, 1),
+        spear.addChild("shaft", b().uv(28, 0).cuboid(-0.75f, -34, -0.75f, 1.5f, 48, 1.5f), N);
+        spear.addChild("ring", b().uv(0, 0).cuboid(-1.5f, -30, -1.5f, 3, 2, 3), N);
+        spear.addChild("tip", b().uv(0, 0).cuboid(-2.5f, -2.5f, -0.5f, 5, 5, 1),
                 ModelTransform.of(0, -38, 0, 0, 0, (float) Math.PI / 4f));
 
         ModelPartData bow = root.addChild("bow", b(), N);
         bow.addChild("grip", b().uv(0, 0).cuboid(-1, -4, -1, 2, 8, 2), N);
         bow.addChild("upper", b().uv(0, 8).cuboid(-1, -16, -1, 2, 16, 2), ModelTransform.of(0, -4, 0, 0, 0, 0.35f));
         bow.addChild("lower", b().uv(0, 8).cuboid(-1, 0, -1, 2, 16, 2), ModelTransform.of(0, 4, 0, 0, 0, -0.35f));
-        bow.addChild("string", b().uv(8, 0).cuboid(5.3f, -19, -0.25f, 0.5f, 38, 0.5f), N);
+        bow.addChild("string", b().uv(16, 0).cuboid(5.3f, -19, -0.25f, 0.5f, 38, 0.5f), N);
 
         ModelPartData shield = root.addChild("shield", b(), N);
-        shield.addChild("face", b().uv(0, 0).cuboid(-9, -12, -1, 18, 24, 2), N);
+        shield.addChild("face", b().uv(19, 31).cuboid(-9, -12, -1, 18, 24, 2), N);
         shield.addChild("boss", b().uv(0, 26).cuboid(-3, -4, -2.5f, 6, 8, 2), N);
         shield.addChild("rim_t", b().uv(0, 26).cuboid(-10, -13, -1.5f, 20, 2, 3), N);
         shield.addChild("rim_b", b().uv(0, 26).cuboid(-10, 11, -1.5f, 20, 2, 3), N);
@@ -237,24 +237,25 @@ public final class StandModels {
         for (int i = 0; i < SHARDS; i++) {
             root.addChild("shard" + i, b().uv(0, 0).cuboid(-2, -2, -2, 4, 4, 4), N);
         }
-        root.addChild("core", b().uv(0, 0).cuboid(-3, -3, -3, 6, 6, 6), N);
+        root.addChild("core", b().uv(15, 0).cuboid(-3, -3, -3, 6, 6, 6), N);
         return TexturedModelData.of(md, 64, 64);
     }
 
-    /** Підтримка: сяюче ядро з крилами, німбом і супутниками. Нічого не б'є. */
-    public static TexturedModelData support() {
+    /** Підтримка на спині гравця: ранець-ядро з крилами й німбом за головою. Координати системи тіла (z+ це спина). */
+    public static TexturedModelData back() {
         ModelData md = new ModelData();
         ModelPartData root = md.getRoot();
-        root.addChild("core", b().uv(0, 0).cuboid(-3, -3, -3, 6, 6, 6), N);
-        root.addChild("wing_l1", b().uv(0, 8).cuboid(0, -0.8f, -0.5f, 12, 1.6f, 1), N);
-        root.addChild("wing_l2", b().uv(0, 8).cuboid(0, -0.7f, -0.5f, 9, 1.4f, 1), N);
-        root.addChild("wing_r1", b().uv(0, 8).cuboid(-12, -0.8f, -0.5f, 12, 1.6f, 1), N);
-        root.addChild("wing_r2", b().uv(0, 8).cuboid(-9, -0.7f, -0.5f, 9, 1.4f, 1), N);
-        root.addChild("halo_f", b().uv(0, 8).cuboid(-6, -0.4f, -6, 12, 0.8f, 1.2f), N);
-        root.addChild("halo_b", b().uv(0, 8).cuboid(-6, -0.4f, 4.8f, 12, 0.8f, 1.2f), N);
-        root.addChild("halo_l", b().uv(0, 8).cuboid(-6, -0.4f, -4.8f, 1.2f, 0.8f, 9.6f), N);
-        root.addChild("halo_r", b().uv(0, 8).cuboid(4.8f, -0.4f, -4.8f, 1.2f, 0.8f, 9.6f), N);
-        for (int i = 0; i < 3; i++) root.addChild("sat" + i, b().uv(0, 0).cuboid(-1.5f, -1.5f, -1.5f, 3, 3, 3), N);
+        root.addChild("pack", b().uv(0, 32).cuboid(-3, 1, 3.1f, 6, 8, 2.5f), N);
+        root.addChild("core", b().uv(0, 32).cuboid(-2, 3, 5.7f, 4, 4, 1.5f), N);
+        root.addChild("wing_l1", b().uv(0, 32).cuboid(0, -0.8f, -0.5f, 11, 1.6f, 1), ModelTransform.pivot(3.2f, 2.5f, 4.2f));
+        root.addChild("wing_l2", b().uv(0, 32).cuboid(0, -0.7f, -0.5f, 8, 1.4f, 1), ModelTransform.pivot(3.2f, 4.5f, 4.2f));
+        root.addChild("wing_r1", b().uv(0, 32).cuboid(-11, -0.8f, -0.5f, 11, 1.6f, 1), ModelTransform.pivot(-3.2f, 2.5f, 4.2f));
+        root.addChild("wing_r2", b().uv(0, 32).cuboid(-8, -0.7f, -0.5f, 8, 1.4f, 1), ModelTransform.pivot(-3.2f, 4.5f, 4.2f));
+        ModelTransform ring = ModelTransform.pivot(0, -4, 7);
+        root.addChild("halo_t", b().uv(0, 32).cuboid(-5, -5.5f, -0.5f, 10, 1, 1), ring);
+        root.addChild("halo_b", b().uv(0, 32).cuboid(-5, 4.5f, -0.5f, 10, 1, 1), ring);
+        root.addChild("halo_l", b().uv(0, 32).cuboid(4.5f, -5, -0.5f, 1, 10, 1), ring);
+        root.addChild("halo_r", b().uv(0, 32).cuboid(-5.5f, -5, -0.5f, 1, 10, 1), ring);
         return TexturedModelData.of(md, 64, 64);
     }
 }

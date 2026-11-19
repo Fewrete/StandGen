@@ -8,13 +8,17 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer;
 import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityModelLayerRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.entity.PlayerEntityRenderer;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.network.PacketByteBuf;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.UUID;
 
 public class StandGenClient implements ClientModInitializer {
     private static final String CAT = "key.categories.standgen";
@@ -32,7 +36,24 @@ public class StandGenClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(StandModels.WORN, StandModels::worn);
         EntityModelLayerRegistry.registerModelLayer(StandModels.WEAPON, StandModels::weapon);
         EntityModelLayerRegistry.registerModelLayer(StandModels.SWARM, StandModels::swarm);
-        EntityModelLayerRegistry.registerModelLayer(StandModels.SUPPORT, StandModels::support);
+        EntityModelLayerRegistry.registerModelLayer(StandModels.BACK, StandModels::back);
+        // стенд Підтримка носиться на спині: шар на моделі гравця
+        LivingEntityFeatureRendererRegistrationCallback.EVENT.register((entityType, entityRenderer, registrationHelper, context) -> {
+            if (entityRenderer instanceof PlayerEntityRenderer per) {
+                registrationHelper.register(new SupportBackFeature(per, context.getModelLoader()));
+            }
+        });
+        ClientPlayNetworking.registerGlobalReceiver(StandGenMod.SUPPORT_BACK, (client, handler, buf, sender) -> {
+            UUID id = buf.readUuid();
+            boolean on = buf.readBoolean();
+            SupportBackState.Data data = null;
+            if (on) {
+                int c1 = buf.readInt(), c2 = buf.readInt(), st = buf.readInt(), sy = buf.readInt(), k = buf.readInt();
+                data = new SupportBackState.Data(c1, c2, st, sy, k);
+            }
+            SupportBackState.Data fin = data;
+            client.execute(() -> SupportBackState.set(id, fin));
+        });
         EntityRendererRegistry.register(StandGenMod.STAND, StandRenderer::new);
 
         // броня-стенд: малюється на гравці й фарбується кольорами стенда (з NBT предмета)
@@ -58,7 +79,10 @@ public class StandGenClient implements ClientModInitializer {
             boolean has = buf.readBoolean();
             client.execute(() -> StandClientState.hasStand = has);
         });
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> StandClientState.hasStand = false);
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            StandClientState.hasStand = false;
+            SupportBackState.clear();
+        });
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
