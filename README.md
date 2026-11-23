@@ -1,4 +1,4 @@
-# StandGen 0.2.4 (Fabric 1.20.1)
+# StandGen 0.2.4b (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
