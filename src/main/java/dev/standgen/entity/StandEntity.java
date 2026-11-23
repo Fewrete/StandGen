@@ -213,11 +213,12 @@ public class StandEntity extends LivingEntity {
         if (fighting && hitCooldown <= 0) {
             boolean barrage = barrageTicks > 0;
             hitCooldown = barrage ? 3 : Math.max(8, 20 - d.speed / 10);
-            float dmg = d.standDamage() * (barrage ? 0.3f : 1f);
+            boolean crit = w.random.nextFloat() < d.critChance();
+            float dmg = d.standDamage() * (barrage ? 0.3f : 1f) * (crit ? 1.5f : 1f);
             target.timeUntilRegen = 0;
             if (target.damage(w.getDamageSources().playerAttack(owner), dmg)) {
                 if (!barrage) target.takeKnockback(0.4, owner.getX() - target.getX(), owner.getZ() - target.getZ());
-                w.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getBodyY(0.5), target.getZ(), 3, 0.2, 0.2, 0.2, 0.1);
+                w.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getBodyY(0.5), target.getZ(), crit ? 14 : 3, 0.2, 0.2, 0.2, 0.1);
                 w.playSound(null, target.getX(), target.getY(), target.getZ(),
                         SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, SoundCategory.PLAYERS, 0.6f, barrage ? 1.4f : 1.0f);
             }

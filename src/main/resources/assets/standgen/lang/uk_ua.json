@@ -77,7 +77,7 @@
   "msg.standgen.fail_no_block": "Немає блока, на який можна націлитись",
   "msg.standgen.fail_no_room": "Немає місця для ривка",
   "msg.standgen.fail_no_target": "Немає цілі в полі зору",
-  "msg.standgen.revive_armed": "Наступна смертельна шкода буде відбита (30 с)",
+  "msg.standgen.revive_armed": "Наступна смертельна шкода буде відбита",
   "msg.standgen.revive_used": "Другий шанс спрацював!",
   "msg.standgen.already_has": "У тебе вже є стенд",
   "msg.standgen.too_weak": "Ти надто ослаблений для пробудження",
@@ -115,5 +115,12 @@
   "standgen.skill.purify": "Очищення",
   "standgen.skill.sanctuary": "Святилище",
   "msg.standgen.support_passive": "Пасивка: Магніт душі (притягує предмети до тебе; вимикається в ручному режимі). Цей стенд не атакує.",
-  "msg.standgen.ores_found": "Відчуто руди: %s"
+  "msg.standgen.ores_found": "Відчуто руди: %s",
+  "key.standgen.menu": "Відкрити меню душі",
+  "standgen.stat.mastery": "Майстерність",
+  "standgen.menu.title": "Душа",
+  "standgen.menu.soul": "Бали душі",
+  "standgen.menu.edit": "Тестовий режим (креатив / оператор): змінюй душу. Shift = більший крок",
+  "standgen.menu.form": "Форма: %s (натисни, щоб змінити)",
+  "msg.standgen.menu_hint": "Натисни %s, щоб побачити бали душі."
 }

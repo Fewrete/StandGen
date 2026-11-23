@@ -133,9 +133,9 @@ public final class Abilities {
 
     /** Чуття руди: Поспіх, нічний зір і частинки на всіх рудах навколо (бачить лише власник). */
     private static boolean oreSense(ServerPlayerEntity p, ServerWorld w, StandData d) {
-        p.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 600, 1));
-        p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 600, 0));
-        int r = Math.min(16, 8 + d.stage * 2);
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, d.dur(600), 1));
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, d.dur(600), 0));
+        int r = (int) Math.min(22, d.radius(8 + d.stage * 2));
         BlockPos c = p.getBlockPos();
         int found = 0;
         for (int dx = -r; dx <= r; dx++)
@@ -148,7 +148,7 @@ public final class Abilities {
                             pos.getZ() + 0.5, 4, 0.3, 0.3, 0.3, 0.02);
                 }
         p.sendMessage(Text.translatable("msg.standgen.ores_found", found).formatted(Formatting.AQUA), true);
-        supportBurst(w, p, d, 4);
+        supportBurst(w, p, d, d.radius(4));
         return true;
     }
 
@@ -157,10 +157,10 @@ public final class Abilities {
         double r = 20 + d.range * 0.2;
         for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r),
                 x -> x instanceof Monster && x.isAlive() && x.squaredDistanceTo(p) <= r * r)) {
-            e.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 200, 0));
+            e.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, d.dur(200), 0));
         }
-        p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 400, 0));
-        supportBurst(w, p, d, 4);
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, d.dur(400), 0));
+        supportBurst(w, p, d, d.radius(4));
         return true;
     }
 
@@ -175,8 +175,8 @@ public final class Abilities {
                 return true;
             }
             case BASTION -> {
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 400, Math.min(3, 1 + d.stage / 3)));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 1));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, d.dur(400), Math.min(3, 1 + d.stage / 3) + d.ampBonus()));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(200), 1));
                 w.spawnParticles(ParticleTypes.ENCHANT, p.getX(), p.getY() + 1, p.getZ(), 40, 0.6, 0.8, 0.6, 0.2);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_ANVIL_PLACE, 0.8f, 1.3f);
                 return true;
@@ -184,8 +184,8 @@ public final class Abilities {
             case DASH -> { return dash(p, w, d); }
             case PIERCE -> { return pierce(p, w, d); }
             case RESURGENCE -> {
-                p.heal(4 + d.stage);
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 1));
+                p.heal(d.heal(4 + d.stage));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, d.dur(100), 1));
                 w.spawnParticles(ParticleTypes.HEART, p.getX(), p.getY() + 1.2, p.getZ(), 10, 0.5, 0.5, 0.5, 0.1);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ITEM_TOTEM_USE, 0.5f, 1.5f);
                 return true;
@@ -195,56 +195,56 @@ public final class Abilities {
             // ---- форма Підтримка: нічого не б'ють, баффають гравця й союзників поруч ----
             case PROSPECT -> { return oreSense(p, w, d); }
             case RALLY -> {
-                for (ServerPlayerEntity a : allies(w, p, 10)) {
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 400, 0));
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 400, 0));
+                for (ServerPlayerEntity a : allies(w, p, d.radius(10))) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, d.dur(400), 0));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(400), 0));
                 }
-                supportBurst(w, p, d, 5);
+                supportBurst(w, p, d, d.radius(5));
                 return true;
             }
             case FORTIFY -> {
-                for (ServerPlayerEntity a : allies(w, p, 8)) {
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 400, Math.min(2, 1 + d.stage / 4)));
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 0));
+                for (ServerPlayerEntity a : allies(w, p, d.radius(8))) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, d.dur(400), Math.min(2, 1 + d.stage / 4) + d.ampBonus()));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(200), 0));
                 }
-                supportBurst(w, p, d, 4);
+                supportBurst(w, p, d, d.radius(4));
                 return true;
             }
             case TAILWIND -> {
-                for (ServerPlayerEntity a : allies(w, p, 10)) {
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 400, 1));
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 400, 1));
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 400, 0));
+                for (ServerPlayerEntity a : allies(w, p, d.radius(10))) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(400), 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, d.dur(400), 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, d.dur(400), 0));
                 }
-                supportBurst(w, p, d, 5);
+                supportBurst(w, p, d, d.radius(5));
                 return true;
             }
             case SCOUT -> { return scout(p, w, d); }
             case MEND -> {
-                for (ServerPlayerEntity a : allies(w, p, 8)) {
-                    a.heal(4 + d.stage);
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
+                for (ServerPlayerEntity a : allies(w, p, d.radius(8))) {
+                    a.heal(d.heal(4 + d.stage));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, d.dur(100), 0));
                 }
-                supportBurst(w, p, d, 4);
+                supportBurst(w, p, d, d.radius(4));
                 w.spawnParticles(ParticleTypes.HEART, p.getX(), p.getY() + 1.4, p.getZ(), 8, 0.6, 0.5, 0.6, 0.1);
                 return true;
             }
             case PURIFY -> {
-                for (ServerPlayerEntity a : allies(w, p, 8)) {
+                for (ServerPlayerEntity a : allies(w, p, d.radius(8))) {
                     cleanse(a);
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 100, 0));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(100), 0));
                 }
-                supportBurst(w, p, d, 4);
+                supportBurst(w, p, d, d.radius(4));
                 return true;
             }
             case SANCTUARY -> {
-                for (ServerPlayerEntity a : allies(w, p, 12)) {
+                for (ServerPlayerEntity a : allies(w, p, d.radius(12))) {
                     cleanse(a);
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 300, 1));
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 1));
-                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 300, 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, d.dur(300), 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(300), 1));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, d.dur(300), 1));
                 }
-                supportBurst(w, p, d, 12);
+                supportBurst(w, p, d, d.radius(12));
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, 1f, 1.2f);
                 return true;
             }
@@ -252,21 +252,21 @@ public final class Abilities {
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }
             case FURY -> {
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 300, 1));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 300, 1));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 0));
-                StandRuntime.startBarrage(p, stand, 100);
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, d.dur(300), 1));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(300), 1));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(300), 0));
+                StandRuntime.startBarrage(p, stand, d.dur(100));
                 w.spawnParticles(ParticleTypes.FLAME, p.getX(), p.getY() + 1, p.getZ(), 40, 0.5, 0.8, 0.5, 0.05);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ENDER_DRAGON_GROWL, 0.6f, 1.4f);
                 return true;
             }
             case CITADEL -> {
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 2));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 0));
-                p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 200, 0));
-                for (ServerPlayerEntity o : w.getPlayers(x -> x != p && x.squaredDistanceTo(p) < 64)) {
-                    o.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 1));
-                    o.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 0));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, d.dur(600), 2));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(200), 0));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, d.dur(200), 0));
+                for (ServerPlayerEntity o : w.getPlayers(x -> x != p && x.squaredDistanceTo(p) < d.radius(8) * d.radius(8))) {
+                    o.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, d.dur(600), 1));
+                    o.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, d.dur(200), 0));
                 }
                 ring(w, ParticleTypes.ENCHANT, p.getPos(), 3, 40);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, 1f, 1f);
@@ -275,7 +275,7 @@ public final class Abilities {
             case TIMESTOP -> { return timestop(p, w, d); }
             case ARROW_RAIN -> { return arrowRain(p, w, d); }
             case SECOND_CHANCE -> {
-                StandRuntime.armRevive(p);
+                StandRuntime.armRevive(p, d.dur(600));
                 p.heal(4);
                 w.spawnParticles(ParticleTypes.TOTEM_OF_UNDYING, p.getX(), p.getY() + 1, p.getZ(), 30, 0.5, 0.8, 0.5, 0.3);
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ITEM_TOTEM_USE, 0.6f, 1.2f);
@@ -332,7 +332,7 @@ public final class Abilities {
         p.fallDistance = 0;
         p.setVelocity(look.multiply(0.6));          // інерція: гравець не зупиняється різко
         p.velocityModified = true;
-        p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 100, 1 + d.stage / 3));
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(100), 1 + d.stage / 3));
         sound(w, start.x, start.y, start.z, SoundEvents.ITEM_TRIDENT_RIPTIDE_1, 0.9f, 1.3f);
         return true;
     }
@@ -465,7 +465,7 @@ public final class Abilities {
 
     private static boolean timestop(ServerPlayerEntity p, ServerWorld w, StandData d) {
         double r = 12 + d.range * 0.1;
-        int dur = 100 + d.stage * 10;
+        int dur = d.dur(100 + d.stage * 10);
         for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r),
                 x -> validTarget(x, p) && !(x instanceof PlayerEntity) && x.squaredDistanceTo(p) <= r * r)) {
             e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, dur, 6));

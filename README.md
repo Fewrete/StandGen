@@ -1,4 +1,4 @@
-# StandGen 0.2.3b (Fabric 1.20.1)
+# StandGen 0.2.4 (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -22,6 +22,7 @@ Defaults:
 |---|---|
 | R | Summon / dismiss stand |
 | G | Toggle AUTO / MANUAL control |
+| K | Open the soul menu |
 | Z (hold) | Manual attack: the stand punches where you look |
 | X / C / V / B | Skill 1 (soul type) / skill 2 (second type, stage 2) / skill 3 (form, stage 3) / skill 4 (ultimate, stage 4) |
 
@@ -37,19 +38,20 @@ MANUAL: the stand only follows you and attacks while Z is held.
   Small details (horns, crest, spikes, lamp, halo, quiver...) depend on your type and a seed.
 - **16 skills:** 6 by type, 4 by form, 6 ultimates (one per main type).
 
-## Support form
-A stand that never attacks. It is worn **on your back** (a pack with wings and a halo behind your head) and helps you and the players near you.
-- **Passive:** Soul Magnet pulls dropped items toward you (turn it off by switching to manual mode with G).
-- **Skills** (buffs apply to you and every player in range): Ore Sense (Miner), Rally (Fighter), Fortify (Builder), Tailwind (Traveler),
-  Scout (Archer), Mend (Survivor) for the two soul-type slots; Purify for the form slot; Sanctuary as the ultimate.
-- Only players who have a stand can see it.
+## Stats and the soul menu
+Your stand and its stats appear in chat when it awakens and with `/stand info`. The **soul scores** (where your stand's type comes from) live in the soul menu: press **K** or use `/stand menu`.
+- **Power:** damage of the stand, its skills and stand weapons. **Speed:** attack rate and shorter skill cooldowns. **Range:** reach and radius.
+- **Precision:** critical-hit chance (up to 40%, x1.5 damage) for the stand and stand weapons.
+- **Mastery:** improves skills that are not direct attacks (buffs, heals, utility): duration, strength and radius.
+- **Durability:** shown only for the Armor form (armor points, toughness, knockback resistance).
+- **Testing:** in creative mode (or as an operator) you can edit the soul scores and change the form in the soul menu.
 
 ## Multiplayer
 - A player who has no stand **cannot see other players' stands** (the figure, the armor and its particles). Spectators see everything.
 - All stand messages (awakening, evolution, `/stand info`) are private to the player. Nothing is broadcast to the server chat.
 
 ## Commands
-`/stand info` shows your stand. For operators: `/stand awaken`, `/stand reset`, `/stand stage 0..8` (for testing skills).
+`/stand info` prints your stand in chat. `/stand menu` opens the soul menu. For operators: `/stand awaken`, `/stand reset`, `/stand stage 0..8` (for testing skills).
 
 ## For developers
 - `StatCollector.register(...)` lets other mods add soul scores. `Progression.addMilestone(...)` adds stage milestones.

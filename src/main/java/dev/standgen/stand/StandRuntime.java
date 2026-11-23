@@ -6,6 +6,9 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.item.BowItem;
+import net.minecraft.item.Items;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.entity.Entity;
@@ -113,7 +116,7 @@ public final class StandRuntime {
     }
 
     // ---- "Другий шанс" ----
-    public static void armRevive(ServerPlayerEntity p) { REVIVE.put(p.getUuid(), p.getServer().getTicks() + 600); }
+    public static void armRevive(ServerPlayerEntity p, int ticks) { REVIVE.put(p.getUuid(), p.getServer().getTicks() + ticks); }
 
     public static boolean consumeRevive(ServerPlayerEntity p) {
         Integer t = REVIVE.get(p.getUuid());
@@ -150,6 +153,21 @@ public final class StandRuntime {
     /** Оновити показники надітої броні (після еволюції). */
     public static void refreshArmor(ServerPlayerEntity p, StandData d) {
         if (ARMOR_ON.contains(p.getUuid())) equipArmor(p, d);
+    }
+
+    /** Зброя в руках: шанс критичного удару від Точності (додатковий урон, +50%). */
+    public static void weaponCrit(ServerPlayerEntity p, LivingEntity target, Hand hand) {
+        if (!WEAPON_HELD.contains(p.getUuid())) return;
+        ItemStack st = p.getStackInHand(hand);
+        if (!StandWeapon.isStandWeapon(st) || st.getItem() instanceof BowItem || st.isOf(Items.SHIELD)) return;
+        StandData d = StandManager.get(p.getServer()).get(p.getUuid());
+        if (d == null || p.getWorld().random.nextFloat() >= d.critChance()) return;
+        float extra = (float) (p.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE) * 0.5);
+        target.damage(p.getDamageSources().playerAttack(p), extra);
+        target.timeUntilRegen = 0;   // щоб основний удар теж пройшов
+        ServerWorld w = (ServerWorld) p.getWorld();
+        w.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getBodyY(0.5), target.getZ(), 14, 0.3, 0.4, 0.3, 0.2);
+        w.playSound(null, target.getX(), target.getY(), target.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_CRIT, SoundCategory.PLAYERS, 0.8f, 1.0f);
     }
 
     // ================= Підтримка: стенд на спині =================
@@ -340,12 +358,13 @@ public final class StandRuntime {
         if (t == null) return;
 
         NEXT_HIT.put(id, now + (barrage ? 3 : Math.max(8, 20 - d.speed / 10)));
-        float dmg = d.standDamage() * (barrage ? 0.3f : 1f);
+        boolean crit = w.random.nextFloat() < d.critChance();
+        float dmg = d.standDamage() * (barrage ? 0.3f : 1f) * (crit ? 1.5f : 1f);
         t.timeUntilRegen = 0;
         if (t.damage(w.getDamageSources().playerAttack(p), dmg)) {
             if (!barrage) t.takeKnockback(0.4, p.getX() - t.getX(), p.getZ() - t.getZ());
             p.swingHand(Hand.MAIN_HAND, true);
-            w.spawnParticles(ParticleTypes.CRIT, t.getX(), t.getBodyY(0.5), t.getZ(), 3, 0.2, 0.2, 0.2, 0.1);
+            w.spawnParticles(ParticleTypes.CRIT, t.getX(), t.getBodyY(0.5), t.getZ(), crit ? 14 : 3, 0.2, 0.2, 0.2, 0.1);
             w.playSound(null, t.getX(), t.getY(), t.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_STRONG,
                     SoundCategory.PLAYERS, 0.6f, barrage ? 1.4f : 1.0f);
         }

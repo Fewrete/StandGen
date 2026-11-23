@@ -77,7 +77,7 @@
   "msg.standgen.fail_no_block": "Kein Block im Visier",
   "msg.standgen.fail_no_room": "Kein Platz für den Ansturm",
   "msg.standgen.fail_no_target": "Kein Ziel in Sicht",
-  "msg.standgen.revive_armed": "Der nächste tödliche Schaden wird abgewehrt (30 s)",
+  "msg.standgen.revive_armed": "Der nächste tödliche Schaden wird abgewehrt",
   "msg.standgen.revive_used": "Zweite Chance ausgelöst!",
   "msg.standgen.already_has": "Du hast bereits einen Stand",
   "msg.standgen.too_weak": "Du bist zu schwach für das Erwachen",
@@ -115,5 +115,12 @@
   "standgen.skill.purify": "Reinigung",
   "standgen.skill.sanctuary": "Zuflucht",
   "msg.standgen.support_passive": "Passiv: Seelenmagnet (zieht Gegenstände zu dir; im manuellen Modus aus). Dieser Stand greift nicht an.",
-  "msg.standgen.ores_found": "Erze gespürt: %s"
+  "msg.standgen.ores_found": "Erze gespürt: %s",
+  "key.standgen.menu": "Seelen-Menü öffnen",
+  "standgen.stat.mastery": "Meisterschaft",
+  "standgen.menu.title": "Seele",
+  "standgen.menu.soul": "Seelenwerte",
+  "standgen.menu.edit": "Testmodus (Kreativ / OP): Seele bearbeiten. Shift = größerer Schritt",
+  "standgen.menu.form": "Form: %s (Klick zum Wechseln)",
+  "msg.standgen.menu_hint": "Drücke %s, um die Seelenwerte zu sehen."
 }

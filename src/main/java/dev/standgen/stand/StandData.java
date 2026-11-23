@@ -7,6 +7,7 @@ import net.minecraft.util.Formatting;
 import net.minecraft.util.math.MathHelper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -23,7 +24,7 @@ public class StandData {
     public int formId = -1;  // збережена форма; -1 = старий збережений стенд без цього поля
 
     // Похідне (перераховується через recalc)
-    public int power, speed, range, durability, precision;
+    public int power, speed, range, durability, precision, mastery;
     public int color1 = 0xFFFFFF, color2 = 0xFFFFFF;
     public float bulk = 1f, height = 1f;
     public StandForm form = StandForm.HUMANOID;
@@ -44,6 +45,8 @@ public class StandData {
         range = stat(20 + 30 * (A + 0.3f * R + 0.2f * B), r, g);
         durability = stat(20 + 30 * (S + 0.4f * B + 0.2f * M), r, g);
         precision = stat(20 + 30 * (0.6f * A + 0.6f * B + 0.2f * M), r, g);
+        // Майстерність (бафи, тривалість, радіус): окремий генератор, щоб не змінити кольори вже існуючих стендів
+        mastery = stat(20 + 30 * (0.5f * S + 0.4f * B + 0.3f * R + 0.2f * A + 0.2f * M), new Random(seed ^ 0x9E3779B97F4A7C15L), g);
 
         // ---- форма вигляду (залежить від душі, але з випадковістю; після видачі зберігається) ----
         Random fr = new Random(seed * 31L + 7L);
@@ -55,8 +58,8 @@ public class StandData {
             case ARMORED -> { durability = mul(durability, 1.25f); speed = mul(speed, 0.85f); }
             case WEAPON -> { power = mul(power, 1.2f); range = mul(range, 0.9f); }
             case SWARM -> { speed = mul(speed, 1.2f); range = mul(range, 1.15f); power = mul(power, 0.85f); }
-            case HUMANOID -> precision = mul(precision, 1.15f);
-            case SUPPORT -> { power = mul(power, 0.6f); range = mul(range, 1.2f); precision = mul(precision, 1.2f); }
+            case HUMANOID -> { precision = mul(precision, 1.15f); mastery = mul(mastery, 1.1f); }
+            case SUPPORT -> { power = mul(power, 0.6f); range = mul(range, 1.2f); precision = mul(precision, 1.2f); mastery = mul(mastery, 1.4f); }
         }
 
         float h1 = frac(primary.hue + (r.nextFloat() - 0.5f) * 0.06f);
@@ -125,6 +128,24 @@ public class StandData {
     public int unlockStage(int slot) { return Skill.UNLOCK[slot]; }
 
     // Боєві значення
+    // ---- Майстерність: покращує здібності, що не є прямою атакою: тривалість, силу та радіус ----
+    public int dur(int ticks) { return Math.round(ticks * (0.7f + mastery * 0.008f)); }
+    public float heal(float h) { return h * (0.7f + mastery * 0.006f); }
+    public double radius(double r) { return r * (0.8 + mastery * 0.004); }
+    public int ampBonus() { return mastery >= 65 ? 1 : 0; }
+
+    // ---- Точність: шанс критичного удару стенда та зброї (x1.5) ----
+    public float critChance() { return Math.min(0.4f, precision * 0.004f); }
+
+    /** Для тестів у креативі: основний і додатковий тип знову береться з двох найбільших балів душі. */
+    public void repickTypes() {
+        Integer[] idx = new Integer[Archetype.COUNT];
+        for (int i = 0; i < idx.length; i++) idx[i] = i;
+        Arrays.sort(idx, (a, b) -> Float.compare(scores[b], scores[a]));
+        primary = Archetype.values()[idx[0]];
+        secondary = Archetype.values()[idx[1]];
+    }
+
     public float standDamage() { return 1.5f + power * 0.03f; }
     public float leash() { return 5f + range * 0.12f; }
 
@@ -145,8 +166,10 @@ public class StandData {
                 : Text.translatable("msg.standgen.form", form.text())).formatted(Formatting.YELLOW));
         l.add(Text.translatable("msg.standgen.stage", stage, Progression.labelText(milestones)).formatted(Formatting.AQUA));
         l.add(statLine("power", power).append("   ").append(statLine("speed", speed)).formatted(Formatting.WHITE));
-        l.add(statLine("range", range).append("   ").append(statLine("durability", durability))
-                .append("   ").append(statLine("precision", precision)).formatted(Formatting.WHITE));
+        MutableText second = statLine("range", range).append("   ").append(statLine("precision", precision))
+                .append("   ").append(statLine("mastery", mastery));
+        if (form == StandForm.ARMORED) second.append("   ").append(statLine("durability", durability));
+        l.add(second.formatted(Formatting.WHITE));
         if (form == StandForm.SUPPORT) l.add(Text.translatable("msg.standgen.support_passive").formatted(Formatting.LIGHT_PURPLE));
         for (int i = 0; i < 4; i++) {
             boolean open = stage >= unlockStage(i);

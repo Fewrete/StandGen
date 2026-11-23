@@ -77,7 +77,7 @@
   "msg.standgen.fail_no_block": "Нет блока для прицеливания",
   "msg.standgen.fail_no_room": "Нет места для рывка",
   "msg.standgen.fail_no_target": "Нет цели в поле зрения",
-  "msg.standgen.revive_armed": "Следующий смертельный урон будет отражён (30 с)",
+  "msg.standgen.revive_armed": "Следующий смертельный урон будет отражён",
   "msg.standgen.revive_used": "Второй шанс сработал!",
   "msg.standgen.already_has": "У тебя уже есть стенд",
   "msg.standgen.too_weak": "Ты слишком ослаблен для пробуждения",
@@ -115,5 +115,12 @@
   "standgen.skill.purify": "Очищение",
   "standgen.skill.sanctuary": "Святилище",
   "msg.standgen.support_passive": "Пассив: Магнит души (притягивает предметы к тебе; отключается в ручном режиме). Этот стенд не атакует.",
-  "msg.standgen.ores_found": "Ощущено руды: %s"
+  "msg.standgen.ores_found": "Ощущено руды: %s",
+  "key.standgen.menu": "Открыть меню души",
+  "standgen.stat.mastery": "Мастерство",
+  "standgen.menu.title": "Душа",
+  "standgen.menu.soul": "Баллы души",
+  "standgen.menu.edit": "Тестовый режим (креатив / оператор): меняй душу. Shift = больший шаг",
+  "standgen.menu.form": "Форма: %s (нажми, чтобы сменить)",
+  "msg.standgen.menu_hint": "Нажми %s, чтобы увидеть баллы души."
 }

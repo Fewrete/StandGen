@@ -55,12 +55,18 @@ public class StandGenMod implements ModInitializer {
     public static final Identifier ACTION = new Identifier(MOD_ID, "action");
     /** Сервер -> клієнт: чи є в цього гравця стенд (без стенда чужі стенди не рендеряться). */
     public static final Identifier HAS_STAND = new Identifier(MOD_ID, "has_stand");
+    /** Сервер -> клієнт: повні дані стенда для меню. */
+    public static final Identifier STAND_DATA = new Identifier(MOD_ID, "stand_data");
+    /** Сервер -> клієнт: відкрити меню стенда. */
+    public static final Identifier OPEN_MENU = new Identifier(MOD_ID, "open_menu");
+    /** Клієнт -> сервер: тестове редагування душі (лише креатив або оператор). */
+    public static final Identifier EDIT = new Identifier(MOD_ID, "edit");
     /** Сервер -> клієнт: стенд Підтримка на спині цього гравця ввімкнено/вимкнено (+ кольори). */
     public static final Identifier SUPPORT_BACK = new Identifier(MOD_ID, "support_back");
 
     /** Коди дій з клієнта. */
     public static final int ACT_SUMMON = 0, ACT_SKILL1 = 1, ACT_SKILL2 = 2, ACT_SKILL3 = 3, ACT_SKILL4 = 4,
-            ACT_MODE = 5, ACT_HOLD_ON = 6, ACT_HOLD_OFF = 7;
+            ACT_MODE = 5, ACT_HOLD_ON = 6, ACT_HOLD_OFF = 7, ACT_MENU = 8;
 
     public static Identifier id(String path) { return new Identifier(MOD_ID, path); }
 
@@ -68,6 +74,58 @@ public class StandGenMod implements ModInitializer {
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeBoolean(has);
         ServerPlayNetworking.send(p, HAS_STAND, buf);
+        sendStandData(p);
+    }
+
+    /** Редагувати душу можна лише для тестів: креатив або оператор. */
+    public static boolean canEdit(ServerPlayerEntity p) {
+        return p.getAbilities().creativeMode || p.hasPermissionLevel(2);
+    }
+
+    public static void sendStandData(ServerPlayerEntity p) {
+        StandData d = StandManager.get(p.getServer()).get(p.getUuid());
+        PacketByteBuf b = PacketByteBufs.create();
+        b.writeBoolean(d != null);
+        if (d != null) {
+            b.writeString(d.name);
+            b.writeInt(d.primary.ordinal()); b.writeInt(d.secondary.ordinal()); b.writeInt(d.form.ordinal());
+            b.writeInt(d.stage); b.writeInt(d.milestones);
+            b.writeInt(d.power); b.writeInt(d.speed); b.writeInt(d.range); b.writeInt(d.durability);
+            b.writeInt(d.precision); b.writeInt(d.mastery);
+            for (int i = 0; i < Archetype.COUNT; i++) b.writeFloat(d.scores[i]);
+            b.writeBoolean(canEdit(p));
+        }
+        ServerPlayNetworking.send(p, STAND_DATA, b);
+    }
+
+    /** Свіжі дані + відкрити меню на клієнті (клавіша, /stand info, /stand menu). */
+    public static void openMenu(ServerPlayerEntity p) {
+        if (StandManager.get(p.getServer()).get(p.getUuid()) == null) {
+            p.sendMessage(Text.translatable("msg.standgen.no_stand_hint").formatted(Formatting.RED), true);
+            return;
+        }
+        sendStandData(p);
+        ServerPlayNetworking.send(p, OPEN_MENU, PacketByteBufs.create());
+    }
+
+    private static void applyEdit(ServerPlayerEntity p, int type, int a, float v) {
+        if (!canEdit(p)) return;
+        StandManager m = StandManager.get(p.getServer());
+        StandData d = m.get(p.getUuid());
+        if (d == null) return;
+        if (type == 0 && a >= 0 && a < Archetype.COUNT) {
+            d.scores[a] = Math.max(0f, Math.min(3f, v));
+            d.repickTypes();
+        } else if (type == 1) {
+            StandRuntime.dismiss(p);
+            d.formId = Math.floorMod(a, StandForm.values().length);
+        } else {
+            return;
+        }
+        d.recalc();
+        m.markDirty();
+        StandRuntime.refreshItems(p, d);
+        sendStandData(p);
     }
 
     public static final Item STAND_ARROW = Registry.register(Registries.ITEM, id("stand_arrow"),
@@ -152,13 +210,23 @@ public class StandGenMod implements ModInitializer {
                     case ACT_MODE -> StandRuntime.toggleManual(player);
                     case ACT_HOLD_ON -> StandRuntime.setHold(player, true);
                     case ACT_HOLD_OFF -> StandRuntime.setHold(player, false);
+                    case ACT_MENU -> openMenu(player);
                     default -> {}
                 }
             });
         });
 
+        ServerPlayNetworking.registerGlobalReceiver(EDIT, (server, player, handler, buf, sender) -> {
+            int type = buf.readInt(), a = buf.readInt();
+            float v = buf.readFloat();
+            server.execute(() -> applyEdit(player, type, a, v));
+        });
+
         // Стенд атакує ціль, яку вдарив власник (лише в авто-режимі)
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+            if (!world.isClient && player instanceof ServerPlayerEntity cs && entity instanceof LivingEntity ce) {
+                StandRuntime.weaponCrit(cs, ce, hand);   // криті зброї в руках
+            }
             if (!world.isClient && player instanceof ServerPlayerEntity sp
                     && entity instanceof LivingEntity le && !(entity instanceof StandEntity)
                     && !StandRuntime.isManual(sp.getUuid())) {
@@ -215,6 +283,7 @@ public class StandGenMod implements ModInitializer {
                     d.recalc();
                     m.markDirty();
                     StandRuntime.refreshItems(p, d);
+                    sendStandData(p);
                     p.sendMessage(Text.translatable("msg.standgen.evolved", ns, Progression.labelText(mask))
                             .formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
                     for (int slot = 1; slot < 4; slot++) {
@@ -226,6 +295,7 @@ public class StandGenMod implements ModInitializer {
                 } else if (ns == d.stage && mask != d.milestones) {
                     d.milestones = mask;   // стадія та сама, лише виправляємо назву етапу
                     m.markDirty();
+                    sendStandData(p);
                 }
             }
         });
@@ -249,7 +319,10 @@ public class StandGenMod implements ModInitializer {
                                 return 0;
                             }
                             for (Text t : d.describe()) ctx.getSource().sendFeedback(() -> t, false);
-                            ctx.getSource().sendFeedback(d::scoreLine, false);
+                            return 1;
+                        }))
+                        .then(CommandManager.literal("menu").executes(ctx -> {
+                            openMenu(ctx.getSource().getPlayerOrThrow());
                             return 1;
                         }))
                         .then(CommandManager.literal("awaken").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
@@ -281,6 +354,7 @@ public class StandGenMod implements ModInitializer {
                                     d.recalc();
                                     m.markDirty();
                                     StandRuntime.refreshItems(p, d);
+                                    sendStandData(p);
                                     ctx.getSource().sendFeedback(() -> Text.translatable("msg.standgen.stage_set", d.stage), false);
                                     return 1;
                                 })))));

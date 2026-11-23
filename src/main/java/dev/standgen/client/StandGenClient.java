@@ -23,6 +23,7 @@ import java.util.UUID;
 public class StandGenClient implements ClientModInitializer {
     private static final String CAT = "key.categories.standgen";
     private static KeyBinding summon, skill1, skill2, skill3, skill4, mode, hold;
+    public static KeyBinding menuKey;
     private static boolean holdDown;
     private static int holdTicks;
 
@@ -74,12 +75,30 @@ public class StandGenClient implements ClientModInitializer {
         skill4 = key("key.standgen.skill4", GLFW.GLFW_KEY_B);
         mode = key("key.standgen.mode", GLFW.GLFW_KEY_G);
         hold = key("key.standgen.attack", GLFW.GLFW_KEY_Z);
+        menuKey = key("key.standgen.menu", GLFW.GLFW_KEY_K);
 
         ClientPlayNetworking.registerGlobalReceiver(StandGenMod.HAS_STAND, (client, handler, buf, sender) -> {
             boolean has = buf.readBoolean();
             client.execute(() -> StandClientState.hasStand = has);
         });
+        ClientPlayNetworking.registerGlobalReceiver(StandGenMod.STAND_DATA, (client, handler, buf, sender) -> {
+            StandClientData data = null;
+            if (buf.readBoolean()) {
+                String name = buf.readString();
+                int pr = buf.readInt(), se = buf.readInt(), fo = buf.readInt(), st = buf.readInt(), ms = buf.readInt();
+                int po = buf.readInt(), sp = buf.readInt(), ra = buf.readInt(), du = buf.readInt(), pc = buf.readInt(), ma = buf.readInt();
+                float[] sc = new float[dev.standgen.stand.Archetype.COUNT];
+                for (int i = 0; i < sc.length; i++) sc[i] = buf.readFloat();
+                boolean edit = buf.readBoolean();
+                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit);
+            }
+            StandClientData fin = data;
+            client.execute(() -> StandClientData.current = fin);
+        });
+        ClientPlayNetworking.registerGlobalReceiver(StandGenMod.OPEN_MENU, (client, handler, buf, sender) ->
+                client.execute(() -> client.setScreen(new StandScreen())));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            StandClientData.current = null;
             StandClientState.hasStand = false;
             SupportBackState.clear();
         });
@@ -92,6 +111,7 @@ public class StandGenClient implements ClientModInitializer {
             while (skill3.wasPressed()) send(StandGenMod.ACT_SKILL3);
             while (skill4.wasPressed()) send(StandGenMod.ACT_SKILL4);
             while (mode.wasPressed()) send(StandGenMod.ACT_MODE);
+            while (menuKey.wasPressed()) send(StandGenMod.ACT_MENU);
 
             // ручна атака: утримувати; пінг кожні ~0.75 с, щоб сервер не скинув стан
             boolean down = hold.isPressed();

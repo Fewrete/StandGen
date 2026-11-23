@@ -58,8 +58,8 @@ public final class StandGenerator {
         m.put(p.getUuid(), d);
         StandGenMod.sendHasStand(p, true);
         p.sendMessage(Text.translatable("msg.standgen.awakened").formatted(Formatting.LIGHT_PURPLE, Formatting.BOLD));
-        for (Text t : d.describe()) p.sendMessage(t);
-        p.sendMessage(d.scoreLine());
+        for (Text t : d.describe()) p.sendMessage(t);   // ім'я, форма, етап, характеристики й здібності; бали душі лише в меню
+        p.sendMessage(Text.translatable("msg.standgen.menu_hint", Text.keybind("key.standgen.menu")).formatted(Formatting.GRAY));
     }
 
     /**

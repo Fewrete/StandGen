@@ -77,7 +77,7 @@
   "msg.standgen.fail_no_block": "No block to target",
   "msg.standgen.fail_no_room": "No room to dash",
   "msg.standgen.fail_no_target": "No target in sight",
-  "msg.standgen.revive_armed": "The next lethal damage will be negated (30 s)",
+  "msg.standgen.revive_armed": "The next lethal damage will be negated",
   "msg.standgen.revive_used": "Second Chance triggered!",
   "msg.standgen.already_has": "You already have a stand",
   "msg.standgen.too_weak": "You are too weak to awaken a stand",
@@ -115,5 +115,12 @@
   "standgen.skill.purify": "Purify",
   "standgen.skill.sanctuary": "Sanctuary",
   "msg.standgen.support_passive": "Passive: Soul Magnet (pulls nearby items to you; off in manual mode). This stand does not attack.",
-  "msg.standgen.ores_found": "Ores sensed: %s"
+  "msg.standgen.ores_found": "Ores sensed: %s",
+  "key.standgen.menu": "Open soul menu",
+  "standgen.stat.mastery": "Mastery",
+  "standgen.menu.title": "Soul",
+  "standgen.menu.soul": "Soul scores",
+  "standgen.menu.edit": "Test mode (creative / op): edit the soul. Shift = bigger step",
+  "standgen.menu.form": "Form: %s (click to change)",
+  "msg.standgen.menu_hint": "Press %s to see your soul scores."
 }
