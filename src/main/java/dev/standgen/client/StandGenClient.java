@@ -56,6 +56,7 @@ public class StandGenClient implements ClientModInitializer {
             client.execute(() -> SupportBackState.set(id, fin));
         });
         EntityRendererRegistry.register(StandGenMod.STAND, StandRenderer::new);
+        EntityRendererRegistry.register(StandGenMod.FX, StandFxRenderer::new);
 
         // броня-стенд: малюється на гравці й фарбується кольорами стенда (з NBT предмета)
         ArmorRenderer.register(new StandArmorRenderer(), StandGenMod.STAND_HELMET, StandGenMod.STAND_CHESTPLATE,

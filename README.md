@@ -6,6 +6,16 @@ evolves together with your progress through the game. Inspired by the "stand" id
 - Requires: **Fabric Loader** + **Fabric API** (the only dependency), Minecraft 1.20.1, Java 17.
 - Languages: English, Ukrainian (uk_ua), Russian (ru_ru), German (de_de).
 
+## What's new in this update: real ability animations
+- **Weapon Throw** is now a real projectile: the stand's weapon leaves the stand, spins through the air along your crosshair, pierces enemies,
+  bounces off walls and flies back to the stand. It hits on the way out and on the way back. While it is away the stand has no weapon.
+- **Time Stop** creates a sphere with a ticking clock on the ground. Inside it mobs, mid-air falling and enemy projectiles are truly frozen
+  (no movement, no gravity, no targeting), while you move freely. When time resumes, everything continues where it stopped.
+- **Shockwaves** for Swarm Burst and Quake, and a **chain** of particles for Grab.
+- **Stand poses:** the humanoid stand now strikes a pose for each skill (reach, aim, slam, raised hand, crossed arms, spread arms, dash).
+  The Weapon stand rises and spins, and the Swarm scatters outward on Burst or tightens into a fast orbit on Time Stop.
+- Armor and Support forms have no separate stand figure, so they get the sphere, shockwaves and particles only.
+
 ## Getting a stand
 - **Craft:** Arrow + Diamond + Gold Ingot (shapeless).
 - **Find:** chests in desert pyramids, jungle temples, pillager outposts, shipwrecks, buried treasure, woodland mansions, strongholds,

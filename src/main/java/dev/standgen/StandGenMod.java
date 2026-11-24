@@ -2,6 +2,7 @@ package dev.standgen;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import dev.standgen.entity.StandEntity;
+import dev.standgen.entity.StandFxEntity;
 import dev.standgen.item.StandArmorItem;
 import dev.standgen.item.StandArmorMaterial;
 import dev.standgen.item.StandArrowItem;
@@ -158,6 +159,14 @@ public class StandGenMod implements ModInitializer {
                     .trackedUpdateRate(1)
                     .build());
 
+    /** Ефекти здібностей: метальна зброя, сфера зупинки часу, ударна хвиля. */
+    public static final EntityType<StandFxEntity> FX = Registry.register(Registries.ENTITY_TYPE, id("fx"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, StandFxEntity::new)
+                    .dimensions(EntityDimensions.fixed(0.5f, 0.5f))
+                    .trackRangeBlocks(96)
+                    .trackedUpdateRate(1)
+                    .build());
+
     /** Де ще можна знайти Стрілу Стенда (шанс 0..1 на таблицю). */
     private static final Map<Identifier, Float> LOOT = new HashMap<>();
     static {
@@ -269,6 +278,7 @@ public class StandGenMod implements ModInitializer {
         // Еволюція: раз на 5 секунд перевіряємо прогрес
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             StandRuntime.tickArmor(server);
+            TimeStop.tick(server);
             if (server.getTicks() % 100 != 0) return;
             StandManager m = StandManager.get(server);
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
@@ -306,6 +316,7 @@ public class StandGenMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 sendHasStand(handler.player, StandManager.get(server).get(handler.player.getUuid()) != null));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> { StandRuntime.dismiss(handler.player); StandRuntime.forget(handler.player.getUuid()); });
+        ServerLifecycleEvents.SERVER_STOPPING.register(s -> TimeStop.endAll());
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> StandRuntime.clear());
 
         // ---- команди ----

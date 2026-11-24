@@ -3,6 +3,7 @@ package dev.standgen.client;
 import dev.standgen.StandGenMod;
 import dev.standgen.entity.StandEntity;
 import dev.standgen.stand.Archetype;
+import dev.standgen.stand.Skill;
 import net.minecraft.client.model.ModelPart;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
@@ -65,21 +66,21 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
             case WEAPON -> {
                 float k = e.getHeightScale() * 0.8f + stage * 0.03f;
                 m.scale(k, k, k);
-                renderWeapon(e, age, m, vc, l, c1, c2, stage);
+                renderWeapon(e, age, tickDelta, m, vc, l, c1, c2, stage);
             }
-            case SWARM -> renderSwarm(e, age, m, vc, l, c1, c2, stage);
+            case SWARM -> renderSwarm(e, age, tickDelta, m, vc, l, c1, c2, stage);
             default -> {
                 float sx = e.getBulk();
                 m.scale(sx, e.getHeightScale(), sx);
                 m.translate(0.0f, -1.501f, 0.0f);
-                renderBiped(humanoid, e, age, headYaw, pitch, m, vc, l, c1, c2, stage);
+                renderBiped(humanoid, e, age, tickDelta, headYaw, pitch, m, vc, l, c1, c2, stage);
             }
         }
         m.pop();
     }
 
     // ---------------- Гуманоїд і Броня (однакова структура частин) ----------------
-    private void renderBiped(ModelPart model, StandEntity e, float age, float headYaw, float pitch, MatrixStack m,
+    private void renderBiped(ModelPart model, StandEntity e, float age, float td, float headYaw, float pitch, MatrixStack m,
                              VertexConsumer vc, int l, float[] c1, float[] c2, int stage) {
         ModelPart head = model.getChild("head"), body = model.getChild("body");
         ModelPart ra = model.getChild("right_arm"), la = model.getChild("left_arm");
@@ -97,6 +98,11 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
             ra.pitch = -1.5f + sw * 0.7f;
             la.pitch = -1.5f - sw * 0.7f;
             ra.roll = 0f; la.roll = 0f;
+        }
+        Skill anim = e.getAnim();
+        if (anim != null) {
+            float p = MathHelper.clamp(e.getAnimElapsed(td) / e.getAnimDur(), 0f, 1f);
+            pose(anim, p, MathHelper.sin(p * MathHelper.PI), age, head, ra, la, m);
         }
 
         int style = e.getStyle();
@@ -122,12 +128,81 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         }
     }
 
+    private static float smooth(float x) {
+        x = MathHelper.clamp(x, 0f, 1f);
+        return x * x * (3f - 2f * x);
+    }
+
+    /** Поза гуманоїда під час здібності. p = 0..1 хід анімації, s = 0..1..0 (пік посередині). */
+    private static void pose(Skill sk, float p, float s, float age, ModelPart head, ModelPart ra, ModelPart la, MatrixStack m) {
+        switch (sk) {
+            case GRAB -> {                       // випад правою рукою вперед
+                ra.pitch = -1.57f - 0.25f * s; ra.roll = 0f;
+                la.pitch = 0.4f * s;
+                m.translate(0f, 0f, -0.5f * s);
+            }
+            case PIERCE -> {                     // обидві руки прицілюються вперед
+                ra.pitch = -1.57f; la.pitch = -1.57f; ra.roll = 0f; la.roll = 0f;
+                m.translate(0f, 0f, -0.15f * s);
+            }
+            case QUAKE, EXCAVATE -> {            // замах угору і удар об землю
+                float swing = p < 0.45f
+                        ? MathHelper.lerp(smooth(p / 0.45f), 0f, -3.0f)
+                        : MathHelper.lerp(smooth((p - 0.45f) / 0.25f), -3.0f, 0.6f);
+                ra.pitch = swing; la.pitch = swing; ra.roll = 0f; la.roll = 0f;
+                if (p > 0.45f) m.translate(0f, 0.12f * s, -0.25f * s);
+            }
+            case TIMESTOP -> {                   // рука вгору-вперед, невеликий тремор
+                float k = smooth(p * 5f);
+                ra.pitch = MathHelper.lerp(k, ra.pitch, -2.5f);
+                ra.roll = MathHelper.lerp(k, ra.roll, 0.35f);
+                ra.yaw = MathHelper.sin(age * 1.5f) * 0.04f * k;
+                la.pitch = MathHelper.lerp(k, la.pitch, -0.4f);
+                head.pitch -= 0.25f * k;
+            }
+            case ARROW_RAIN -> {                 // обидві руки вгору
+                float k = smooth(p * 4f);
+                ra.pitch = MathHelper.lerp(k, ra.pitch, -3.0f); la.pitch = MathHelper.lerp(k, la.pitch, -3.0f);
+                ra.roll = 0.35f * k; la.roll = -0.35f * k;
+                head.pitch -= 0.3f * k;
+            }
+            case BASTION, CITADEL -> {           // руки схрещені перед грудьми
+                float k = smooth(p * 4f);
+                ra.pitch = -1.1f * k; la.pitch = -1.1f * k;
+                ra.yaw = -0.7f * k; la.yaw = 0.7f * k;
+                ra.roll = 0f; la.roll = 0f;
+            }
+            case RESURGENCE, SECOND_CHANCE -> {  // руки в сторони
+                float k = smooth(p * 4f);
+                ra.pitch = 0f; la.pitch = 0f;
+                ra.roll = 0.08f + 1.3f * k; la.roll = -0.08f - 1.3f * k;
+                head.pitch -= 0.3f * k;
+            }
+            case DASH -> {                       // руки назад, корпус рвонув уперед
+                ra.pitch = 0.9f * s; la.pitch = 0.9f * s;
+                m.translate(0f, 0f, -0.6f * s);
+            }
+            default -> {                         // загальний жест
+                ra.pitch = -1.3f * s; la.pitch = -1.3f * s;
+            }
+        }
+    }
+
     // ---------------- Зброя ----------------
-    private void renderWeapon(StandEntity e, float age, MatrixStack m, VertexConsumer vc, int l,
+    private void renderWeapon(StandEntity e, float age, float td, MatrixStack m, VertexConsumer vc, int l,
                               float[] c1, float[] c2, int stage) {
         int kind = e.getKind().ordinal();
         for (int i = 0; i < GROUPS.length; i++) weapon.getChild(GROUPS[i]).visible = (i == kind);
         ModelPart g = weapon.getChild(GROUPS[kind]);
+        Skill anim = e.getAnim();
+        boolean thrown = anim == Skill.THROW;       // зброя відлетіла: на стенді її немає
+        float as = 0f;
+        if (anim != null && !thrown) {
+            float ap = MathHelper.clamp(e.getAnimElapsed(td) / e.getAnimDur(), 0f, 1f);
+            as = MathHelper.sin(ap * MathHelper.PI);
+            float pulse = 1f + 0.25f * as;
+            m.scale(pulse, pulse, pulse);
+        }
 
         g.pivotX = 0f;
         g.pivotY = 3f + MathHelper.sin(age * 0.1f) * 1.5f;
@@ -140,12 +215,13 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
             g.pivotZ = -8f - sw * 6f;
         } else {                         // у спокої повільно обертається
             g.pitch = 0f;
-            g.yaw = age * 0.06f;
+            g.yaw = age * 0.06f + as * 5f;
             g.roll = 0.5f;
+            g.pivotY -= 6f * as;
         }
 
-        g.render(m, vc, l, OverlayTexture.DEFAULT_UV, c1[0], c1[1], c1[2], 0.92f);
-        if (stage >= 2) {
+        if (!thrown) g.render(m, vc, l, OverlayTexture.DEFAULT_UV, c1[0], c1[1], c1[2], 0.92f);
+        if (stage >= 2 && !thrown) {
             m.push();
             m.scale(1.12f, 1.12f, 1.12f);
             g.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c2[0], c2[1], c2[2], 0.3f);
@@ -167,11 +243,22 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
     }
 
     // ---------------- Рій ----------------
-    private void renderSwarm(StandEntity e, float age, MatrixStack m, VertexConsumer vc, int l,
+    private void renderSwarm(StandEntity e, float age, float td, MatrixStack m, VertexConsumer vc, int l,
                              float[] c1, float[] c2, int stage) {
         int count = Math.min(StandModels.SHARDS, 8 + stage * 2);
         boolean atk = e.isPunching();
         m.translate(0.0f, -0.3f, 0.0f); // центр орбіти трохи нижче рівня шиї
+
+        // анімація здібності: Вибух розкидає уламки, Зупинка часу збирає їх у тугу орбіту
+        float spread = 1f, spin = 1f, flash = 0f;
+        Skill anim = e.getAnim();
+        if (anim != null) {
+            float ap = MathHelper.clamp(e.getAnimElapsed(td) / e.getAnimDur(), 0f, 1f);
+            float as = MathHelper.sin(ap * MathHelper.PI);
+            if (anim == Skill.BURST) { spread = 1f + 2.4f * as; flash = as; }
+            else if (anim == Skill.TIMESTOP) { spread = 1f - 0.45f * smooth(ap * 5f); spin = 3f; }
+            else { spread = 1f + 0.3f * as; spin = 1f + 2f * as; flash = as * 0.5f; }
+        }
 
         for (int i = 0; i < StandModels.SHARDS; i++) {
             ModelPart s = swarm.getChild(SHARD_NAMES[i]);
@@ -185,8 +272,8 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
                 y = MathHelper.cos(i * 1.7f) * 6f - 2f;
                 z = -(6f + 22f * phase);
             } else {
-                float a = age * 0.05f + i * (MathHelper.TAU / count);
-                float r = 20f + (i % 3) * 4f;
+                float a = age * 0.05f * spin + i * (MathHelper.TAU / count);
+                float r = (20f + (i % 3) * 4f) * spread;
                 x = MathHelper.cos(a) * r;
                 z = MathHelper.sin(a) * r;
                 y = -6f + MathHelper.sin(age * 0.1f + i) * 6f + ((i % 4) - 1.5f) * 5f;
@@ -207,6 +294,10 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         core.pivotZ = 0f;
         core.pitch = age * 0.05f;
         core.yaw = age * 0.08f;
+        m.push();
+        float cs = 1f + 0.9f * flash;
+        m.scale(cs, cs, cs);
         core.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c2[0], c2[1], c2[2], 0.95f);
+        m.pop();
     }
 }

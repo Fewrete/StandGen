@@ -1,6 +1,7 @@
 package dev.standgen.stand;
 
 import dev.standgen.entity.StandEntity;
+import dev.standgen.entity.StandFxEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -89,6 +90,17 @@ public final class Abilities {
         }
     }
 
+    /** Лінія частинок кольорів стенда між двома точками (ланцюг захоплення). */
+    private static void chain(ServerWorld w, Vec3d from, Vec3d to, StandData d) {
+        DustColorTransitionParticleEffect fx = new DustColorTransitionParticleEffect(rgb(d.color1), rgb(d.color2), 1.2f);
+        double len = from.distanceTo(to);
+        int n = Math.max(2, (int) Math.ceil(len / 0.3));
+        for (int i = 0; i <= n; i++) {
+            Vec3d pt = from.lerp(to, i / (double) n);
+            w.spawnParticles(fx, pt.x, pt.y, pt.z, 1, 0.03, 0.03, 0.03, 0.0);
+        }
+    }
+
     /** Форма Броня носиться на гравці й не може бити далеко: її здібності працюють лише поблизу. */
     private static boolean armored(StandData d) { return d.form == StandForm.ARMORED; }
 
@@ -167,6 +179,13 @@ public final class Abilities {
     // ---------------- виконання ----------------
     /** @return true якщо здібність спрацювала (тоді йде перезарядка) */
     public static boolean execute(Skill s, ServerPlayerEntity p, StandEntity stand, StandData d) {
+        boolean ok = run(s, p, stand, d);
+        // поза стенда під час здібності (метання сама керує своєю анімацією)
+        if (ok && stand != null && s != Skill.THROW && s != Skill.BARRAGE && s != Skill.FURY) stand.playAnim(s);
+        return ok;
+    }
+
+    private static boolean run(Skill s, ServerPlayerEntity p, StandEntity stand, StandData d) {
         ServerWorld w = (ServerWorld) p.getWorld();
         switch (s) {
             case EXCAVATE -> { return excavate(p, w, d); }
@@ -248,7 +267,7 @@ public final class Abilities {
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, 1f, 1.2f);
                 return true;
             }
-            case THROW -> { return thrust(p, w, d); }
+            case THROW -> { return thrust(p, w, stand, d); }
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }
             case FURY -> {
@@ -395,35 +414,29 @@ public final class Abilities {
         t.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, dur, 1));
         t.timeUntilRegen = 0;
         t.damage(w.getDamageSources().playerAttack(p), d.standDamage());
+        StandEntity gs = StandRuntime.getStand(p);
+        chain(w, gs != null ? gs.getPos().add(0, 1.1, 0) : p.getEyePos().subtract(0, 0.3, 0), t.getPos().add(0, t.getHeight() * 0.5, 0), d);
         w.spawnParticles(ParticleTypes.CRIT, t.getX(), t.getBodyY(0.5), t.getZ(), 15, 0.3, 0.5, 0.3, 0.2);
         sound(w, t.getX(), t.getY(), t.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_KNOCKBACK, 1f, 0.8f);
         return true;
     }
 
-    private static boolean thrust(ServerPlayerEntity p, ServerWorld w, StandData d) {
+    /** Метання: зброя реально летить уздовж погляду, пробиває ворогів, відбивається від стін і повертається до стенда. */
+    private static boolean thrust(ServerPlayerEntity p, ServerWorld w, StandEntity stand, StandData d) {
+        double max = 14 + d.range * 0.15;
+        float dmg = (5 + d.power * 0.07f) * 0.8f;          // вражає при польоті вперед і назад
         Vec3d eye = p.getEyePos();
         Vec3d look = p.getRotationVec(1f);
-        double max = 14 + d.range * 0.15;
-        float dmg = 5 + d.power * 0.07f;
-        Set<Entity> hit = new HashSet<>();
-        Vec3d end = eye;
-        for (double t = 1; t <= max; t += 0.5) {
-            Vec3d pt = eye.add(look.multiply(t));
-            BlockPos bp = BlockPos.ofFloored(pt);
-            if (!w.getBlockState(bp).getCollisionShape(w, bp).isEmpty()) break;
-            end = pt;
-            w.spawnParticles(ParticleTypes.CRIT, pt.x, pt.y, pt.z, 2, 0.1, 0.1, 0.1, 0.0);
-            for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, new Box(pt, pt).expand(1.0),
-                    x -> validTarget(x, p))) {
-                if (hit.add(e)) {
-                    e.timeUntilRegen = 0;
-                    e.damage(w.getDamageSources().playerAttack(p), dmg);
-                    e.takeKnockback(1.0, -look.x, -look.z);
-                }
-            }
-        }
-        w.spawnParticles(ParticleTypes.EXPLOSION, end.x, end.y, end.z, 1, 0, 0, 0, 0);
-        sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_SWEEP, 1f, 0.8f);
+        Vec3d from = stand != null ? stand.getPos().add(0, 0.9, 0) : eye.add(look.multiply(0.8)).subtract(0, 0.3, 0);
+        // ціль: точка, куди дивиться гравець (до першого блока), щоб влучати в приціл
+        HitResult hr = p.raycast(max, 1f, false);
+        Vec3d aim = hr.getType() == HitResult.Type.MISS ? eye.add(look.multiply(max)) : hr.getPos();
+        Vec3d dir = aim.subtract(from);
+        if (dir.lengthSquared() < 1.0E-4) dir = look;
+        float size = 0.9f + d.stage * 0.04f;
+        StandFxEntity.spawnThrown(w, p, d, from, dir, max, dmg, size);
+        if (stand != null) stand.playAnim(Skill.THROW, 200);   // зброя покинула стенд, поки летить
+        sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ITEM_TRIDENT_THROW, 1f, 0.8f);
         return true;
     }
 
@@ -436,6 +449,7 @@ public final class Abilities {
             e.damage(w.getDamageSources().playerAttack(p), dmg);
             e.takeKnockback(0.9, p.getX() - e.getX(), p.getZ() - e.getZ());
         }
+        StandFxEntity.spawnPulse(w, p.getPos(), d.color1, d.color2, (float) r, 14);
         ring(w, ParticleTypes.END_ROD, p.getPos(), r * 0.6, 30);
         ring(w, ParticleTypes.CRIT, p.getPos(), r, 40);
         w.spawnParticles(ParticleTypes.EXPLOSION, p.getX(), p.getY() + 1, p.getZ(), 1, 0, 0, 0, 0);
@@ -456,6 +470,7 @@ public final class Abilities {
             e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 2));
         }
         p.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 200, 2));
+        StandFxEntity.spawnPulse(w, p.getPos(), d.color1, d.color2, (float) r, 18);
         ring(w, ParticleTypes.POOF, p.getPos(), 3, 30);
         ring(w, ParticleTypes.POOF, p.getPos(), 6, 50);
         w.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, p.getX(), p.getY() + 0.5, p.getZ(), 1, 0, 0, 0, 0);
@@ -463,20 +478,12 @@ public final class Abilities {
         return true;
     }
 
+    /** Зупинка часу: сфера, у якій моби й чужі снаряди по-справжньому завмирають (див. TimeStop). */
     private static boolean timestop(ServerPlayerEntity p, ServerWorld w, StandData d) {
-        double r = 12 + d.range * 0.1;
+        double r = Math.min(26, 12 + d.range * 0.1);
         int dur = d.dur(100 + d.stage * 10);
-        for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r),
-                x -> validTarget(x, p) && !(x instanceof PlayerEntity) && x.squaredDistanceTo(p) <= r * r)) {
-            e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, dur, 6));
-            e.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, dur, 3));
-            e.setVelocity(Vec3d.ZERO);
-            e.velocityModified = true;
-        }
+        TimeStop.start(p, w, d, r, dur);
         p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, dur, 2));
-        ring(w, ParticleTypes.END_ROD, p.getPos(), 2, 30);
-        ring(w, ParticleTypes.END_ROD, p.getPos(), r * 0.7, 60);
-        sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1f, 0.5f);
         return true;
     }
 

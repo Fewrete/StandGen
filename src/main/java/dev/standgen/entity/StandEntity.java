@@ -5,6 +5,7 @@ import dev.standgen.stand.Archetype;
 import dev.standgen.stand.StandData;
 import dev.standgen.stand.StandForm;
 import dev.standgen.stand.StandManager;
+import dev.standgen.stand.Skill;
 import dev.standgen.stand.StandRuntime;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -46,12 +47,17 @@ public class StandEntity extends LivingEntity {
     private static final TrackedData<Integer> FORM = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> KIND = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> STYLE = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Анімація здібності: 0 = немає, інакше Skill.ordinal()+1. */
+    private static final TrackedData<Integer> ANIM = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> ANIM_LEFT = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> ANIM_DUR = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     private UUID ownerId;
     private LivingEntity target;
     private int targetTimeout;
     private int hitCooldown;
     private int barrageTicks;
+    private int animLeft;
 
     public StandEntity(EntityType<? extends StandEntity> type, World world) {
         super(type, world);
@@ -75,6 +81,9 @@ public class StandEntity extends LivingEntity {
         dataTracker.startTracking(FORM, 0);
         dataTracker.startTracking(KIND, 0);
         dataTracker.startTracking(STYLE, 0);
+        dataTracker.startTracking(ANIM, 0);
+        dataTracker.startTracking(ANIM_LEFT, 0);
+        dataTracker.startTracking(ANIM_DUR, 1);
     }
 
     // ---- для рендера ----
@@ -87,6 +96,56 @@ public class StandEntity extends LivingEntity {
     public StandForm getForm() { return StandForm.values()[MathHelper.clamp(dataTracker.get(FORM), 0, StandForm.values().length - 1)]; }
     public Archetype getKind() { return Archetype.values()[MathHelper.clamp(dataTracker.get(KIND), 0, Archetype.COUNT - 1)]; }
     public int getStyle() { return dataTracker.get(STYLE); }
+
+    // ---- анімації здібностей ----
+    /** Скільки тіків триває поза для здібності. */
+    public static int animTicks(Skill s) {
+        return switch (s) {
+            case TIMESTOP -> 36;
+            case QUAKE -> 22;
+            case EXCAVATE -> 16;
+            case GRAB -> 14;
+            case PIERCE -> 12;
+            case BURST -> 16;
+            case ARROW_RAIN -> 30;
+            case BASTION, CITADEL -> 24;
+            case RESURGENCE, SECOND_CHANCE -> 24;
+            case DASH -> 10;
+            default -> 14;
+        };
+    }
+
+    public void playAnim(Skill s) { playAnim(s, animTicks(s)); }
+
+    public void playAnim(Skill s, int ticks) {
+        animLeft = ticks;
+        dataTracker.set(ANIM, s.ordinal() + 1);
+        dataTracker.set(ANIM_DUR, Math.max(1, ticks));
+        dataTracker.set(ANIM_LEFT, ticks);
+    }
+
+    /** Зупинити анімацію, якщо зараз грає саме ця. */
+    public void stopAnim(Skill s) {
+        if (dataTracker.get(ANIM) == s.ordinal() + 1) {
+            animLeft = 0;
+            dataTracker.set(ANIM, 0);
+            dataTracker.set(ANIM_LEFT, 0);
+        }
+    }
+
+    public Skill getAnim() {
+        int a = dataTracker.get(ANIM);
+        Skill[] v = Skill.values();
+        return a <= 0 || a > v.length ? null : v[a - 1];
+    }
+
+    public int getAnimDur() { return Math.max(1, dataTracker.get(ANIM_DUR)); }
+
+    /** Скільки тіків минуло від початку анімації (плавно, з tickDelta). */
+    public float getAnimElapsed(float tickDelta) {
+        float e = dataTracker.get(ANIM_DUR) - (dataTracker.get(ANIM_LEFT) - tickDelta);
+        return MathHelper.clamp(e, 0f, (float) getAnimDur());
+    }
 
     public void setOwner(UUID id) { this.ownerId = id; }
 
@@ -137,6 +196,11 @@ public class StandEntity extends LivingEntity {
         if (d == null) { discard(); return; }
 
         if (age % 20 == 0) applyData(d);
+        if (animLeft > 0) {
+            animLeft--;
+            dataTracker.set(ANIM_LEFT, animLeft);
+            if (animLeft == 0) dataTracker.set(ANIM, 0);
+        }
         if (age % 40 == 0 && d.form != StandForm.SUPPORT) Abilities.applyPassive(owner, d);
 
         int now = w.getServer().getTicks();
