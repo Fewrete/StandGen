@@ -14,6 +14,7 @@ evolves together with your progress through the game. Inspired by the "stand" id
 - **Shockwaves** for Swarm Burst and Quake, and a **chain** of particles for Grab.
 - **Stand poses:** the humanoid stand now strikes a pose for each skill (reach, aim, slam, raised hand, crossed arms, spread arms, dash).
   The Weapon stand rises and spins, and the Swarm scatters outward on Burst or tightens into a fast orbit on Time Stop.
+- **Soul menu (test mode) fixed:** buttons 1 / 2 now set the primary / secondary type directly, and +/- only change the score. Before, a big score from real play kept overriding the choice.
 - Armor and Support forms have no separate stand figure, so they get the sphere, shockwaves and particles only.
 
 ## Getting a stand

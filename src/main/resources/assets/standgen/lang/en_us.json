@@ -121,6 +121,7 @@
   "standgen.menu.title": "Soul",
   "standgen.menu.soul": "Soul scores",
   "standgen.menu.edit": "Test mode (creative / op): edit the soul. Shift = bigger step",
+  "standgen.menu.pick": "Buttons 1 / 2 = set primary / secondary type. + / - change the score only",
   "standgen.menu.form": "Form: %s (click to change)",
   "msg.standgen.menu_hint": "Press %s to see your soul scores."
 }

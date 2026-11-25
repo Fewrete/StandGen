@@ -35,6 +35,8 @@ public class StandScreen extends Screen {
                 int y = SOUL_Y + i * 16;
                 addDrawableChild(ButtonWidget.builder(Text.literal("-"), b -> adjust(idx, -0.1f)).dimensions(bx, y - 2, 16, 14).build());
                 addDrawableChild(ButtonWidget.builder(Text.literal("+"), b -> adjust(idx, 0.1f)).dimensions(bx + 18, y - 2, 16, 14).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("1"), b -> pickType(2, idx)).dimensions(bx + 42, y - 2, 16, 14).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("2"), b -> pickType(3, idx)).dimensions(bx + 60, y - 2, 16, 14).build());
             }
             formBtn = addDrawableChild(ButtonWidget.builder(Text.empty(), b -> cycleForm())
                     .dimensions(width / 2 - 150, height - 28, 140, 20).build());
@@ -50,6 +52,13 @@ public class StandScreen extends Screen {
         float nv = Math.max(0f, Math.min(3f, d.scores()[idx] + step));
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeInt(0); buf.writeInt(idx); buf.writeFloat(nv);
+        ClientPlayNetworking.send(StandGenMod.EDIT, buf);
+    }
+
+    /** kind: 2 = основний тип, 3 = додатковий тип. */
+    private void pickType(int kind, int idx) {
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeInt(kind); buf.writeInt(idx); buf.writeFloat(0f);
         ClientPlayNetworking.send(StandGenMod.EDIT, buf);
     }
 
@@ -95,6 +104,7 @@ public class StandScreen extends Screen {
         }
         if (d.canEdit()) {
             ctx.drawText(textRenderer, Text.translatable("standgen.menu.edit"), left(), SOUL_Y + Archetype.COUNT * 16 + 6, 0xFF5555, true);
+            ctx.drawText(textRenderer, Text.translatable("standgen.menu.pick"), left(), SOUL_Y + Archetype.COUNT * 16 + 18, 0xFFAA55, true);
             if (formBtn != null) formBtn.setMessage(Text.translatable("standgen.menu.form", sd.form.text()));
         }
         super.render(ctx, mouseX, mouseY, delta);

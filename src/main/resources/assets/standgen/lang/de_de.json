@@ -121,6 +121,7 @@
   "standgen.menu.title": "Seele",
   "standgen.menu.soul": "Seelenwerte",
   "standgen.menu.edit": "Testmodus (Kreativ / OP): Seele bearbeiten. Shift = größerer Schritt",
+  "standgen.menu.pick": "Tasten 1 / 2 = Haupt- / Nebentyp wählen. + / - ändern nur den Wert",
   "standgen.menu.form": "Form: %s (Klick zum Wechseln)",
   "msg.standgen.menu_hint": "Drücke %s, um die Seelenwerte zu sehen."
 }

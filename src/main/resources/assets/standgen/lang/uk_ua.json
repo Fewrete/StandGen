@@ -121,6 +121,7 @@
   "standgen.menu.title": "Душа",
   "standgen.menu.soul": "Бали душі",
   "standgen.menu.edit": "Тестовий режим (креатив / оператор): змінюй душу. Shift = більший крок",
+  "standgen.menu.pick": "Кнопки 1 / 2 = обрати основний / додатковий тип. + / - змінюють лише бал",
   "standgen.menu.form": "Форма: %s (натисни, щоб змінити)",
   "msg.standgen.menu_hint": "Натисни %s, щоб побачити бали душі."
 }

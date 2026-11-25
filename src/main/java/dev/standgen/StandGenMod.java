@@ -115,8 +115,18 @@ public class StandGenMod implements ModInitializer {
         StandData d = m.get(p.getUuid());
         if (d == null) return;
         if (type == 0 && a >= 0 && a < Archetype.COUNT) {
+            // лише міняє бал (характеристики); тип стенда обирається окремо, інакше великий бал із реальної гри перебивав би вибір
             d.scores[a] = Math.max(0f, Math.min(3f, v));
-            d.repickTypes();
+        } else if ((type == 2 || type == 3) && a >= 0 && a < Archetype.COUNT) {
+            // прямий вибір типу: 2 = основний, 3 = додатковий (якщо збігається з іншим, вони міняються місцями)
+            Archetype pick = Archetype.values()[a];
+            if (type == 2) {
+                if (d.secondary == pick) d.secondary = d.primary;
+                d.primary = pick;
+            } else {
+                if (d.primary == pick) d.primary = d.secondary;
+                d.secondary = pick;
+            }
         } else if (type == 1) {
             StandRuntime.dismiss(p);
             d.formId = Math.floorMod(a, StandForm.values().length);
