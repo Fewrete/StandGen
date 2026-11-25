@@ -2,6 +2,7 @@ package dev.standgen.stand;
 
 import dev.standgen.StandGenMod;
 import dev.standgen.entity.StandEntity;
+import dev.standgen.entity.StandFxEntity;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -283,6 +284,29 @@ public final class StandRuntime {
                 SoundCategory.PLAYERS, 0.8f, on ? 0.7f : 1.2f);
     }
 
+    /** Здібність форми Стихія: Стихія -> Зброя -> Броня -> Стихія. Стенд перезбирається в новій формі. */
+    public static boolean shiftForm(ServerPlayerEntity p, StandData d) {
+        StandForm next = d.shift == null ? StandForm.WEAPON : d.shift == StandForm.WEAPON ? StandForm.ARMORED : null;
+        if (next == StandForm.ARMORED) {
+            for (EquipmentSlot s : StandArmor.SLOTS) {
+                if (!p.getEquippedStack(s).isEmpty() && !StandArmor.isStandArmor(p.getEquippedStack(s))) {
+                    msg(p, "msg.standgen.armor_remove_first", Formatting.RED);
+                    return false;
+                }
+            }
+        }
+        dismiss(p);            // знімає сутність, броню й зброю старої форми (ручний режим зберігається)
+        d.shift = next;
+        d.recalc();
+        toggle(p);             // збирає стенд у новій формі: сутність, броня або зброя в руках
+        ServerWorld w = (ServerWorld) p.getWorld();
+        StandFxEntity.spawnPulse(w, p.getPos(), d.color1, d.color2, 3.5f, 12);
+        w.spawnParticles(ElementZone.particle(d.element), p.getX(), p.getY() + 1, p.getZ(), 30, 0.6, 0.8, 0.6, 0.15);
+        w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1f, 1.4f);
+        p.sendMessage(Text.translatable("msg.standgen.form", d.form.text()).formatted(Formatting.GOLD), true);
+        return true;
+    }
+
     /** Прибрати стенд будь-якої форми (сутність або броню). */
     public static void dismiss(ServerPlayerEntity p) {
         StandEntity s = getStand(p);
@@ -363,6 +387,7 @@ public final class StandRuntime {
         t.timeUntilRegen = 0;
         if (t.damage(w.getDamageSources().playerAttack(p), dmg)) {
             if (!barrage) t.takeKnockback(0.4, p.getX() - t.getX(), p.getZ() - t.getZ());
+            Abilities.elementHit(t, d);
             p.swingHand(Hand.MAIN_HAND, true);
             w.spawnParticles(ParticleTypes.CRIT, t.getX(), t.getBodyY(0.5), t.getZ(), crit ? 14 : 3, 0.2, 0.2, 0.2, 0.1);
             w.playSound(null, t.getX(), t.getY(), t.getZ(), SoundEvents.ENTITY_PLAYER_ATTACK_STRONG,

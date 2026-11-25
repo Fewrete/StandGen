@@ -89,7 +89,7 @@ public class StandGenMod implements ModInitializer {
         b.writeBoolean(d != null);
         if (d != null) {
             b.writeString(d.name);
-            b.writeInt(d.primary.ordinal()); b.writeInt(d.secondary.ordinal()); b.writeInt(d.form.ordinal());
+            b.writeInt(d.primary.ordinal()); b.writeInt(d.secondary.ordinal()); b.writeInt(d.baseForm().ordinal());
             b.writeInt(d.stage); b.writeInt(d.milestones);
             b.writeInt(d.power); b.writeInt(d.speed); b.writeInt(d.range); b.writeInt(d.durability);
             b.writeInt(d.precision); b.writeInt(d.mastery);
@@ -129,11 +129,25 @@ public class StandGenMod implements ModInitializer {
                 d.secondary = pick;
             }
         } else if (type == 4) {
-            // тестовий вибір стихії: 0 = немає, 1..COUNT
+            // тестовий вибір стихії: 0 = немає (форма Стихія знімається), 1..COUNT (форма Стихія вмикається)
+            StandRuntime.dismiss(p);
+            d.shift = null;
             d.element = Element.byId(Math.floorMod(a, Element.COUNT + 1));
+            if (d.element == Element.NONE) {
+                if (d.formId == StandForm.ELEMENTAL.ordinal()) d.formId = StandForm.HUMANOID.ordinal();
+            } else {
+                d.formId = StandForm.ELEMENTAL.ordinal();
+            }
         } else if (type == 1) {
             StandRuntime.dismiss(p);
+            d.shift = null;
             d.formId = Math.floorMod(a, StandForm.values().length);
+            // Стихія й форма Стихія йдуть парою
+            if (d.formId == StandForm.ELEMENTAL.ordinal()) {
+                if (d.element == Element.NONE) d.element = Element.FIRE;
+            } else {
+                d.element = Element.NONE;
+            }
         } else {
             return;
         }

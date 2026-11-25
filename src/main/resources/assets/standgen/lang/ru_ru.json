@@ -143,5 +143,8 @@
   "standgen.menu.elem_btn": "Стихия: %s (нажми, чтобы сменить)",
   "standgen.menu.src.type": "тип",
   "standgen.menu.src.element": "стихия",
-  "standgen.menu.src.form": "форма"
+  "standgen.menu.src.form": "форма",
+  "standgen.form.elemental": "Стихия",
+  "standgen.skill.shift": "Превращение",
+  "msg.standgen.form_shift": "Форма: %s (сейчас: %s)"
 }

@@ -272,6 +272,7 @@ public final class Abilities {
                 ElementZone.start(p, w, d, s);
                 return true;
             }
+            case SHIFT -> { return StandRuntime.shiftForm(p, d); }
             case THROW -> { return thrust(p, w, stand, d); }
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }
@@ -403,6 +404,20 @@ public final class Abilities {
         }
         sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ARROW_SHOOT, 1f, 1.8f);
         return true;
+    }
+
+    /** Стихія додає невеликий ефект до звичайних ударів стенда й броні. */
+    public static void elementHit(LivingEntity t, StandData d) {
+        switch (d.element) {
+            case FIRE -> t.setOnFireFor(2);
+            case WATER -> t.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 25, 0));
+            case ICE -> {
+                t.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 0));
+                t.setFrozenTicks(Math.min(t.getFrozenTicks() + 25, t.getMinFreezeDamageTicks() + 40));
+            }
+            case SAND -> t.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 25, 0));
+            default -> {}
+        }
     }
 
     /** Промінь стихії (слот 2): летить до прицілу, зупиняється на блоці, діє на кожного ворога раз. */

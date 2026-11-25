@@ -38,8 +38,25 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         this.swarm = ctx.getPart(StandModels.SWARM);
     }
 
+    private static final String[] ELEMENT_NAMES = {"", "fire", "water", "ice", "sand"};
+    private static final Identifier[] ELEMENT_TEX = new Identifier[ELEMENT_NAMES.length];
+    private static final boolean[] ELEMENT_CHECKED = new boolean[ELEMENT_NAMES.length];
+
+    /** Для стихійного стенда береться textures/entity/stand_<стихія>.png, якщо файл є, інакше спільна stand.png. */
+    private static Identifier textureFor(int elementId) {
+        if (elementId <= 0 || elementId >= ELEMENT_NAMES.length) return TEXTURE;
+        if (!ELEMENT_CHECKED[elementId]) {
+            ELEMENT_CHECKED[elementId] = true;
+            Identifier id = new Identifier(StandGenMod.MOD_ID, "textures/entity/stand_" + ELEMENT_NAMES[elementId] + ".png");
+            if (net.minecraft.client.MinecraftClient.getInstance().getResourceManager().getResource(id).isPresent()) {
+                ELEMENT_TEX[elementId] = id;
+            }
+        }
+        return ELEMENT_TEX[elementId] != null ? ELEMENT_TEX[elementId] : TEXTURE;
+    }
+
     @Override
-    public Identifier getTexture(StandEntity entity) { return TEXTURE; }
+    public Identifier getTexture(StandEntity entity) { return textureFor(entity.getElementId()); }
 
     private static float[] rgb(int c) {
         return new float[]{(c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f};
@@ -56,7 +73,7 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         int l = stage >= 3 ? FULLBRIGHT : light;
         float[] c1 = rgb(e.getColor1());
         float[] c2 = rgb(e.getColor2());
-        VertexConsumer vc = vcp.getBuffer(RenderLayer.getEntityTranslucent(TEXTURE));
+        VertexConsumer vc = vcp.getBuffer(RenderLayer.getEntityTranslucent(getTexture(e)));
 
         m.push();
         m.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f - bodyYaw));

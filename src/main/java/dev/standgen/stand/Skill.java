@@ -38,13 +38,15 @@ public enum Skill {
     FLAME_LANCE(220), INFERNO(1500),
     TIDAL_JET(220), DELUGE(1500),
     FROST_BOLT(220), BLIZZARD(1600),
-    SAND_BLAST(220), SANDSTORM(1500);
+    SAND_BLAST(220), SANDSTORM(1500),
+    // слот 2 форми Стихія: перетворення стенда на Зброю або Броню
+    SHIFT(100);
 
     /** Стадія, з якої відкривається слот. */
     public static final int[] UNLOCK = {0, 2, 3, 4};
 
     private static final Skill[] BY_TYPE = {EXCAVATE, BARRAGE, BASTION, DASH, PIERCE, RESURGENCE};
-    private static final Skill[] BY_FORM = {GRAB, WALL, THROW, BURST, PURIFY};   // порядок StandForm
+    private static final Skill[] BY_FORM = {GRAB, WALL, THROW, BURST, PURIFY, SHIFT};   // порядок StandForm
     private static final Skill[] SUPPORT = {PROSPECT, RALLY, FORTIFY, TAILWIND, SCOUT, MEND};   // порядок Archetype
     private static final Skill[] ULTIMATE = {QUAKE, FURY, CITADEL, TIMESTOP, ARROW_RAIN, SECOND_CHANCE};
 

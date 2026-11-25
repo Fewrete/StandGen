@@ -49,6 +49,7 @@ public class StandEntity extends LivingEntity {
     private static final TrackedData<Integer> FORM = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> KIND = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> STYLE = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> ELEMENT = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     /** Анімація здібності: 0 = немає, інакше Skill.ordinal()+1. */
     private static final TrackedData<Integer> ANIM = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> ANIM_LEFT = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -83,6 +84,7 @@ public class StandEntity extends LivingEntity {
         dataTracker.startTracking(FORM, 0);
         dataTracker.startTracking(KIND, 0);
         dataTracker.startTracking(STYLE, 0);
+        dataTracker.startTracking(ELEMENT, 0);
         dataTracker.startTracking(ANIM, 0);
         dataTracker.startTracking(ANIM_LEFT, 0);
         dataTracker.startTracking(ANIM_DUR, 1);
@@ -162,7 +164,10 @@ public class StandEntity extends LivingEntity {
         dataTracker.set(FORM, d.form.ordinal());
         dataTracker.set(KIND, d.primary.ordinal());
         dataTracker.set(STYLE, d.style);
+        dataTracker.set(ELEMENT, d.element.id);
     }
+
+    public int getElementId() { return dataTracker.get(ELEMENT); }
 
     public void setTarget(LivingEntity t) {
         this.target = t;
@@ -286,6 +291,7 @@ public class StandEntity extends LivingEntity {
             target.timeUntilRegen = 0;
             if (target.damage(w.getDamageSources().playerAttack(owner), dmg)) {
                 if (!barrage) target.takeKnockback(0.4, owner.getX() - target.getX(), owner.getZ() - target.getZ());
+                Abilities.elementHit(target, d);
                 w.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getBodyY(0.5), target.getZ(), crit ? 14 : 3, 0.2, 0.2, 0.2, 0.1);
                 w.playSound(null, target.getX(), target.getY(), target.getZ(),
                         SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, SoundCategory.PLAYERS, 0.6f, barrage ? 1.4f : 1.0f);

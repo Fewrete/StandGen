@@ -153,8 +153,8 @@ public class StandScreen extends Screen {
         ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.element", sd.element.text()), width / 2, 30,
                 sd.element.isNone() ? GRAY : 0xFFFF55);
         ctx.drawText(textRenderer, Text.translatable("standgen.menu.abilities"), x, 56, GRAY, true);
-        boolean elemental = !sd.element.isNone() && sd.form != StandForm.SUPPORT;
-        boolean support = sd.form == StandForm.SUPPORT;
+        boolean elemental = sd.baseForm() == StandForm.ELEMENTAL;
+        boolean support = sd.baseForm() == StandForm.SUPPORT;
         for (int i = 0; i < 4; i++) {
             Skill sk = sd.skill(i);
             boolean open = d.stage() >= sd.unlockStage(i);

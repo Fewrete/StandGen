@@ -143,5 +143,8 @@
   "standgen.menu.elem_btn": "Element: %s (Klick zum Wechseln)",
   "standgen.menu.src.type": "Typ",
   "standgen.menu.src.element": "Element",
-  "standgen.menu.src.form": "Form"
+  "standgen.menu.src.form": "Form",
+  "standgen.form.elemental": "Element",
+  "standgen.skill.shift": "Verwandlung",
+  "msg.standgen.form_shift": "Form: %s (jetzt: %s)"
 }

@@ -1,4 +1,4 @@
-# StandGen 0.2.4b (Fabric 1.20.1)
+# StandGen 0.2.6b (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -6,15 +6,16 @@ evolves together with your progress through the game. Inspired by the "stand" id
 - Requires: **Fabric Loader** + **Fabric API** (the only dependency), Minecraft 1.20.1, Java 17.
 - Languages: English, Ukrainian (uk_ua), Russian (ru_ru), German (de_de).
 
-## What's new in this update: elemental stands
-- **Four elements: Fire, Water, Ice and Sand.** Some stands awaken with an element. What draws a soul to an element is hidden, so discover it by playing.
-  Souls that match no element still have a small chance to get a random one.
-- An elemental stand keeps its type skill (slot 1) and its form skill (slot 3). Its second skill (slot 2) becomes an **element ray**
-  (Flame Lance, Tidal Jet, Frost Bolt, Sand Blast) and its ultimate (slot 4) becomes an **element field** (Inferno, Deluge, Blizzard, Sandstorm)
-  that lasts several seconds around you. Support stands keep their support skills.
-- The element tints the stand, adds particles around it and gives a small stat bonus.
+## What's new in this update: the Elemental form
+- **A new, separate stand form: Elemental** (Fire, Water, Ice or Sand). What draws a soul to an element is hidden, so discover it by playing.
+  Souls that match no element still have a small chance to get a random one. An elemental stand uses the humanoid body with its own colour,
+  element particles and a small stat bonus, and its normal hits add a short element effect (burning, slowing, freezing, blinding).
+- **Skills of the Elemental form:** slot 1 your type skill, slot 2 an **element ray** (Flame Lance, Tidal Jet, Frost Bolt, Sand Blast),
+  slot 3 **Transformation**, slot 4 an **element field** (Inferno, Deluge, Blizzard, Sandstorm) that lasts several seconds around you.
+- **Transformation** turns the stand into a Weapon, then into Armor, then back to Elemental (armor needs empty armor slots). Your skills stay the same.
 - **Soul menu page 2** shows the element and where each of the four skills comes from. Use the `<` `>` buttons or the arrow keys to switch pages.
-  In creative or as an operator you can change the element for testing.
+  In creative or as an operator you can change the form and the element for testing.
+- Optional element textures: put `stand_fire.png`, `stand_water.png`, `stand_ice.png` or `stand_sand.png` (same layout as `stand.png`) into `textures/entity`.
 
 ## Getting a stand
 - **Craft:** Arrow + Diamond + Gold Ingot (shapeless).
@@ -44,7 +45,7 @@ MANUAL: the stand only follows you and attacks while Z is held.
   This gives a main type and a second type: Miner, Fighter, Builder, Traveler, Archer, Survivor.
 - **Stage** = number of completed milestones (iron, diamonds, Nether, fortress, Wither, End, dragon, elytra). Higher stage means higher stats,
   more skills and a more impressive look.
-- **Form** (chosen when you awaken, weighted by your soul): Humanoid (+precision), Armor (+durability), Weapon (+power), Swarm (+speed, range).
+- **Form** (chosen when you awaken, weighted by your soul): Humanoid (+precision), Armor (+durability), Weapon (+power), Swarm (+speed, range), Support, and the rare Elemental form.
   Small details (horns, crest, spikes, lamp, halo, quiver...) depend on your type and a seed.
 - **16 skills:** 6 by type, 4 by form, 6 ultimates (one per main type).
 

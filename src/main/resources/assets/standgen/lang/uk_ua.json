@@ -143,5 +143,8 @@
   "standgen.menu.elem_btn": "Стихія: %s (натисни, щоб змінити)",
   "standgen.menu.src.type": "тип",
   "standgen.menu.src.element": "стихія",
-  "standgen.menu.src.form": "форма"
+  "standgen.menu.src.form": "форма",
+  "standgen.form.elemental": "Стихія",
+  "standgen.skill.shift": "Перетворення",
+  "msg.standgen.form_shift": "Форма: %s (зараз: %s)"
 }

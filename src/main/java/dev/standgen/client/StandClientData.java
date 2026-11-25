@@ -17,6 +17,7 @@ public record StandClientData(String name, int primary, int secondary, int form,
         d.secondary = Archetype.values()[Math.max(0, Math.min(secondary, Archetype.COUNT - 1))];
         d.form = StandForm.values()[Math.max(0, Math.min(form, StandForm.values().length - 1))];
         d.element = dev.standgen.stand.Element.byId(element);
+        d.formId = Math.max(0, Math.min(form, StandForm.values().length - 1));
         d.stage = stage;
         d.milestones = milestones;
         return d;

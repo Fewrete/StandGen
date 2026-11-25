@@ -28,7 +28,9 @@ public class StandData {
     public int power, speed, range, durability, precision, mastery;
     public int color1 = 0xFFFFFF, color2 = 0xFFFFFF;
     public float bulk = 1f, height = 1f;
-    public StandForm form = StandForm.HUMANOID;
+    public StandForm form = StandForm.HUMANOID;   // поточна форма (з урахуванням перетворення)
+    /** Тимчасове перетворення форми Стихія (Зброя/Броня); null = основна форма. Лише під час гри, не зберігається. */
+    public StandForm shift = null;
     public int style; // 0..3, дрібні варіації вигляду (гребінь, роги)
 
     public void recalc() {
@@ -53,7 +55,10 @@ public class StandData {
         Random fr = new Random(seed * 31L + 7L);
         float u = fr.nextFloat();
         if (formId < 0) formId = pickIndex(formWeights(false), u);   // старий стенд: рахуємо як раніше (4 форми)
-        form = StandForm.values()[formId];
+        // стихія й форма Стихія завжди йдуть парою
+        if (formId == StandForm.ELEMENTAL.ordinal() && element == Element.NONE) element = Element.FIRE;
+        if (formId != StandForm.ELEMENTAL.ordinal() && element != Element.NONE) formId = StandForm.ELEMENTAL.ordinal();
+        form = shift != null ? shift : StandForm.values()[formId];
         style = fr.nextInt(4);
         switch (form) {
             case ARMORED -> { durability = mul(durability, 1.25f); speed = mul(speed, 0.85f); }
@@ -61,6 +66,7 @@ public class StandData {
             case SWARM -> { speed = mul(speed, 1.2f); range = mul(range, 1.15f); power = mul(power, 0.85f); }
             case HUMANOID -> { precision = mul(precision, 1.15f); mastery = mul(mastery, 1.1f); }
             case SUPPORT -> { power = mul(power, 0.6f); range = mul(range, 1.2f); precision = mul(precision, 1.2f); mastery = mul(mastery, 1.4f); }
+            case ELEMENTAL -> { mastery = mul(mastery, 1.15f); power = mul(power, 1.05f); }
         }
 
         float h1 = frac(primary.hue + (r.nextFloat() - 0.5f) * 0.06f);
@@ -120,6 +126,11 @@ public class StandData {
 
     private static float frac(float h) { return h - (float) Math.floor(h); }
 
+    /** Основна (збережена) форма стенда, без урахування тимчасового перетворення. */
+    public StandForm baseForm() {
+        return formId >= 0 && formId < StandForm.values().length ? StandForm.values()[formId] : form;
+    }
+
     // Здібності за слотами: 0 основний тип, 1 додатковий тип, 2 форма, 3 ультимейт
     public Skill skill(int slot) {
         if (form == StandForm.SUPPORT) {
@@ -130,11 +141,11 @@ public class StandData {
                 default -> Skill.SANCTUARY;
             };
         }
-        boolean el = element != Element.NONE;
+        boolean el = baseForm() == StandForm.ELEMENTAL && element != Element.NONE;
         return switch (slot) {
             case 0 -> Skill.of(primary);
             case 1 -> el ? Skill.elemental(element) : Skill.of(secondary);
-            case 2 -> Skill.form(form);
+            case 2 -> el ? Skill.SHIFT : Skill.form(form);
             default -> el ? Skill.elementalUltimate(element) : Skill.ultimate(primary);
         };
     }
@@ -175,7 +186,9 @@ public class StandData {
         List<Text> l = new ArrayList<>();
         l.add(Text.literal("✦ " + name + " ✦").formatted(Formatting.GOLD, Formatting.BOLD));
         l.add(Text.translatable("msg.standgen.soul", primary.text(), secondary.text()).formatted(Formatting.YELLOW));
-        l.add((form == StandForm.WEAPON
+        l.add((shift != null
+                ? Text.translatable("msg.standgen.form_shift", baseForm().text(), shift.text())
+                : form == StandForm.WEAPON
                 ? Text.translatable("msg.standgen.form_weapon", form.text(), primary.weaponText())
                 : Text.translatable("msg.standgen.form", form.text())).formatted(Formatting.YELLOW));
         if (element != Element.NONE) l.add(Text.translatable("msg.standgen.element", element.text()).formatted(Formatting.GOLD));
