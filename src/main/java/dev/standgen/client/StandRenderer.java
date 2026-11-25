@@ -141,7 +141,7 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
                 la.pitch = 0.4f * s;
                 m.translate(0f, 0f, -0.5f * s);
             }
-            case PIERCE -> {                     // обидві руки прицілюються вперед
+            case PIERCE, FLAME_LANCE, TIDAL_JET, FROST_BOLT, SAND_BLAST -> {   // обидві руки прицілюються вперед
                 ra.pitch = -1.57f; la.pitch = -1.57f; ra.roll = 0f; la.roll = 0f;
                 m.translate(0f, 0f, -0.15f * s);
             }
@@ -160,7 +160,7 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
                 la.pitch = MathHelper.lerp(k, la.pitch, -0.4f);
                 head.pitch -= 0.25f * k;
             }
-            case ARROW_RAIN -> {                 // обидві руки вгору
+            case ARROW_RAIN, INFERNO, DELUGE, BLIZZARD, SANDSTORM -> {   // обидві руки вгору
                 float k = smooth(p * 4f);
                 ra.pitch = MathHelper.lerp(k, ra.pitch, -3.0f); la.pitch = MathHelper.lerp(k, la.pitch, -3.0f);
                 ra.roll = 0.35f * k; la.roll = -0.35f * k;

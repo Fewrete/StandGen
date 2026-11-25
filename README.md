@@ -6,16 +6,15 @@ evolves together with your progress through the game. Inspired by the "stand" id
 - Requires: **Fabric Loader** + **Fabric API** (the only dependency), Minecraft 1.20.1, Java 17.
 - Languages: English, Ukrainian (uk_ua), Russian (ru_ru), German (de_de).
 
-## What's new in this update: real ability animations
-- **Weapon Throw** is now a real projectile: the stand's weapon leaves the stand, spins through the air along your crosshair, pierces enemies,
-  bounces off walls and flies back to the stand. It hits on the way out and on the way back. While it is away the stand has no weapon.
-- **Time Stop** creates a sphere with a ticking clock on the ground. Inside it mobs, mid-air falling and enemy projectiles are truly frozen
-  (no movement, no gravity, no targeting), while you move freely. When time resumes, everything continues where it stopped.
-- **Shockwaves** for Swarm Burst and Quake, and a **chain** of particles for Grab.
-- **Stand poses:** the humanoid stand now strikes a pose for each skill (reach, aim, slam, raised hand, crossed arms, spread arms, dash).
-  The Weapon stand rises and spins, and the Swarm scatters outward on Burst or tightens into a fast orbit on Time Stop.
-- **Soul menu (test mode) fixed:** buttons 1 / 2 now set the primary / secondary type directly, and +/- only change the score. Before, a big score from real play kept overriding the choice.
-- Armor and Support forms have no separate stand figure, so they get the sphere, shockwaves and particles only.
+## What's new in this update: elemental stands
+- **Four elements: Fire, Water, Ice and Sand.** Some stands awaken with an element. What draws a soul to an element is hidden, so discover it by playing.
+  Souls that match no element still have a small chance to get a random one.
+- An elemental stand keeps its type skill (slot 1) and its form skill (slot 3). Its second skill (slot 2) becomes an **element ray**
+  (Flame Lance, Tidal Jet, Frost Bolt, Sand Blast) and its ultimate (slot 4) becomes an **element field** (Inferno, Deluge, Blizzard, Sandstorm)
+  that lasts several seconds around you. Support stands keep their support skills.
+- The element tints the stand, adds particles around it and gives a small stat bonus.
+- **Soul menu page 2** shows the element and where each of the four skills comes from. Use the `<` `>` buttons or the arrow keys to switch pages.
+  In creative or as an operator you can change the element for testing.
 
 ## Getting a stand
 - **Craft:** Arrow + Diamond + Gold Ingot (shapeless).

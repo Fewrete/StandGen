@@ -5,6 +5,8 @@ import dev.standgen.stand.Archetype;
 import dev.standgen.stand.StandData;
 import dev.standgen.stand.StandForm;
 import dev.standgen.stand.StandManager;
+import dev.standgen.stand.Element;
+import dev.standgen.stand.ElementZone;
 import dev.standgen.stand.Skill;
 import dev.standgen.stand.StandRuntime;
 import net.minecraft.entity.Entity;
@@ -111,6 +113,8 @@ public class StandEntity extends LivingEntity {
             case BASTION, CITADEL -> 24;
             case RESURGENCE, SECOND_CHANCE -> 24;
             case DASH -> 10;
+            case FLAME_LANCE, TIDAL_JET, FROST_BOLT, SAND_BLAST -> 12;
+            case INFERNO, DELUGE, BLIZZARD, SANDSTORM -> 30;
             default -> 14;
         };
     }
@@ -308,6 +312,9 @@ public class StandEntity extends LivingEntity {
         }
         if (d.stage >= 3 && age % 6 == 0) {
             seenParticles(w, ParticleTypes.END_ROD, 1, 0.2, 0.4, 0.2, 0.0);
+        }
+        if (d.element != Element.NONE && age % 5 == 0) {
+            seenParticles(w, ElementZone.particle(d.element), 1, 0.3, 0.5, 0.3, 0.01);
         }
     }
 

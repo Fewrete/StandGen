@@ -95,6 +95,7 @@ public class StandGenMod implements ModInitializer {
             b.writeInt(d.precision); b.writeInt(d.mastery);
             for (int i = 0; i < Archetype.COUNT; i++) b.writeFloat(d.scores[i]);
             b.writeBoolean(canEdit(p));
+            b.writeInt(d.element.id);
         }
         ServerPlayNetworking.send(p, STAND_DATA, b);
     }
@@ -127,6 +128,9 @@ public class StandGenMod implements ModInitializer {
                 if (d.primary == pick) d.primary = d.secondary;
                 d.secondary = pick;
             }
+        } else if (type == 4) {
+            // тестовий вибір стихії: 0 = немає, 1..COUNT
+            d.element = Element.byId(Math.floorMod(a, Element.COUNT + 1));
         } else if (type == 1) {
             StandRuntime.dismiss(p);
             d.formId = Math.floorMod(a, StandForm.values().length);
@@ -285,10 +289,13 @@ public class StandGenMod implements ModInitializer {
             return true;
         });
 
+        ElementSignals.register();
+
         // Еволюція: раз на 5 секунд перевіряємо прогрес
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             StandRuntime.tickArmor(server);
             TimeStop.tick(server);
+            ElementZone.tick(server);
             if (server.getTicks() % 100 != 0) return;
             StandManager m = StandManager.get(server);
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
@@ -326,7 +333,7 @@ public class StandGenMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 sendHasStand(handler.player, StandManager.get(server).get(handler.player.getUuid()) != null));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> { StandRuntime.dismiss(handler.player); StandRuntime.forget(handler.player.getUuid()); });
-        ServerLifecycleEvents.SERVER_STOPPING.register(s -> TimeStop.endAll());
+        ServerLifecycleEvents.SERVER_STOPPING.register(s -> { TimeStop.endAll(); ElementZone.endAll(); });
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> StandRuntime.clear());
 
         // ---- команди ----

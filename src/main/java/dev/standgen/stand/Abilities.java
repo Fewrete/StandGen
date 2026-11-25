@@ -267,6 +267,11 @@ public final class Abilities {
                 sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, 1f, 1.2f);
                 return true;
             }
+            case FLAME_LANCE, TIDAL_JET, FROST_BOLT, SAND_BLAST -> { return elementBolt(p, w, stand, d); }
+            case INFERNO, DELUGE, BLIZZARD, SANDSTORM -> {
+                ElementZone.start(p, w, d, s);
+                return true;
+            }
             case THROW -> { return thrust(p, w, stand, d); }
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }
@@ -397,6 +402,65 @@ public final class Abilities {
             }
         }
         sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ARROW_SHOOT, 1f, 1.8f);
+        return true;
+    }
+
+    /** Промінь стихії (слот 2): летить до прицілу, зупиняється на блоці, діє на кожного ворога раз. */
+    private static boolean elementBolt(ServerPlayerEntity p, ServerWorld w, StandEntity stand, StandData d) {
+        Element el = d.element;
+        Vec3d eye = p.getEyePos();
+        Vec3d look = p.getRotationVec(1f);
+        double max = armored(d) ? 6.0 : 12 + d.range * 0.2;
+        float dmg = 3 + d.power * 0.07f + d.precision * 0.02f;
+        Vec3d from = stand != null ? stand.getPos().add(0, 1.1, 0) : eye.add(look.multiply(0.6)).subtract(0, 0.3, 0);
+        HitResult hr = p.raycast(max, 1f, false);
+        Vec3d aim = hr.getType() == HitResult.Type.MISS ? eye.add(look.multiply(max)) : hr.getPos();
+        Vec3d dir = aim.subtract(from);
+        if (dir.lengthSquared() < 1.0E-4) dir = look;
+        double len = Math.min(max, dir.length());
+        dir = dir.normalize();
+        ParticleEffect main = ElementZone.particle(el), second = ElementZone.particle2(el);
+        DustColorTransitionParticleEffect line = new DustColorTransitionParticleEffect(rgb(d.color1), rgb(d.color2), 1.1f);
+        Set<Entity> hit = new HashSet<>();
+        for (double t = 0.5; t <= len; t += 0.5) {
+            Vec3d pt = from.add(dir.multiply(t));
+            BlockPos bp = BlockPos.ofFloored(pt);
+            if (!w.getBlockState(bp).getCollisionShape(w, bp).isEmpty()) {
+                w.spawnParticles(main, pt.x, pt.y, pt.z, 14, 0.3, 0.3, 0.3, 0.1);
+                break;
+            }
+            w.spawnParticles(main, pt.x, pt.y, pt.z, 2, 0.08, 0.08, 0.08, 0.01);
+            w.spawnParticles(line, pt.x, pt.y, pt.z, 1, 0.02, 0.02, 0.02, 0.0);
+            if (((int) (t * 2)) % 3 == 0) w.spawnParticles(second, pt.x, pt.y, pt.z, 1, 0.12, 0.12, 0.12, 0.01);
+            for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, new Box(pt, pt).expand(0.7), x -> validTarget(x, p))) {
+                if (!hit.add(e)) continue;
+                e.timeUntilRegen = 0;
+                switch (el) {
+                    case FIRE -> {
+                        e.damage(w.getDamageSources().playerAttack(p), dmg);
+                        e.setOnFireFor(4 + d.stage / 2);
+                    }
+                    case WATER -> {
+                        e.damage(w.getDamageSources().playerAttack(p), dmg * 0.7f);
+                        e.extinguish();
+                        e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 1));
+                        e.takeKnockback(1.4, -dir.x, -dir.z);
+                    }
+                    case ICE -> {
+                        e.damage(w.getDamageSources().playerAttack(p), dmg);
+                        e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 2));
+                        e.setFrozenTicks(e.getMinFreezeDamageTicks() + 60);
+                    }
+                    default -> {   // SAND
+                        e.damage(w.getDamageSources().playerAttack(p), dmg * 0.9f);
+                        e.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0));
+                        e.takeKnockback(0.9, -dir.x, -dir.z);
+                    }
+                }
+                w.spawnParticles(main, e.getX(), e.getBodyY(0.5), e.getZ(), 16, 0.3, 0.4, 0.3, 0.12);
+            }
+        }
+        sound(w, p.getX(), p.getY(), p.getZ(), ElementZone.sound(el), 1f, 1.1f);
         return true;
     }
 

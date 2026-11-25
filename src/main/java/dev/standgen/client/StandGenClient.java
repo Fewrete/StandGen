@@ -91,7 +91,8 @@ public class StandGenClient implements ClientModInitializer {
                 float[] sc = new float[dev.standgen.stand.Archetype.COUNT];
                 for (int i = 0; i < sc.length; i++) sc[i] = buf.readFloat();
                 boolean edit = buf.readBoolean();
-                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit);
+                int el = buf.readInt();
+                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit, el);
             }
             StandClientData fin = data;
             client.execute(() -> StandClientData.current = fin);

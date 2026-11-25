@@ -33,7 +33,12 @@ public enum Skill {
     SCOUT(500),
     MEND(600),
     PURIFY(400),
-    SANCTUARY(2400);
+    SANCTUARY(2400),
+    // стихії: слот 1 (замість додаткового типу) і слот 3 (замість ультимейта типу); у кінці, щоб не зсунути ordinal старих здібностей
+    FLAME_LANCE(220), INFERNO(1500),
+    TIDAL_JET(220), DELUGE(1500),
+    FROST_BOLT(220), BLIZZARD(1600),
+    SAND_BLAST(220), SANDSTORM(1500);
 
     /** Стадія, з якої відкривається слот. */
     public static final int[] UNLOCK = {0, 2, 3, 4};
@@ -42,6 +47,9 @@ public enum Skill {
     private static final Skill[] BY_FORM = {GRAB, WALL, THROW, BURST, PURIFY};   // порядок StandForm
     private static final Skill[] SUPPORT = {PROSPECT, RALLY, FORTIFY, TAILWIND, SCOUT, MEND};   // порядок Archetype
     private static final Skill[] ULTIMATE = {QUAKE, FURY, CITADEL, TIMESTOP, ARROW_RAIN, SECOND_CHANCE};
+
+    private static final Skill[] ELEMENT_SKILL = {null, FLAME_LANCE, TIDAL_JET, FROST_BOLT, SAND_BLAST};   // за Element.id
+    private static final Skill[] ELEMENT_ULTIMATE = {null, INFERNO, DELUGE, BLIZZARD, SANDSTORM};
 
     public final int baseCooldown; // тіки
 
@@ -53,4 +61,11 @@ public enum Skill {
     public static Skill support(Archetype a) { return SUPPORT[a.ordinal()]; }
     public static Skill form(StandForm f) { return BY_FORM[f.ordinal()]; }
     public static Skill ultimate(Archetype a) { return ULTIMATE[a.ordinal()]; }
+    public static Skill elemental(Element e) { return ELEMENT_SKILL[e.id]; }
+    public static Skill elementalUltimate(Element e) { return ELEMENT_ULTIMATE[e.id]; }
+
+    /** Ультимейт-поле стихії (діє певний час навколо гравця). */
+    public boolean isElementUltimate() {
+        return this == INFERNO || this == DELUGE || this == BLIZZARD || this == SANDSTORM;
+    }
 }

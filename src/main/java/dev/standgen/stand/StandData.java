@@ -22,6 +22,7 @@ public class StandData {
     public int stage;
     public int milestones;   // маска виконаних віх (для назви етапу)
     public int formId = -1;  // збережена форма; -1 = старий збережений стенд без цього поля
+    public Element element = Element.NONE;   // стихія (визначається при пробудженні, зберігається)
 
     // Похідне (перераховується через recalc)
     public int power, speed, range, durability, precision, mastery;
@@ -66,6 +67,18 @@ public class StandData {
         float h2 = frac(secondary.hue + (r.nextFloat() - 0.5f) * 0.06f);
         color1 = MathHelper.hsvToRgb(h1, 0.55f + r.nextFloat() * 0.35f, 0.8f + r.nextFloat() * 0.2f);
         color2 = MathHelper.hsvToRgb(h2, 0.55f + r.nextFloat() * 0.35f, 0.8f + r.nextFloat() * 0.2f);
+
+        // стихія: свій відтінок основного кольору й невеликий бонус до однієї характеристики
+        if (element != Element.NONE) {
+            color1 = MathHelper.hsvToRgb(frac(element.hue + (r.nextFloat() - 0.5f) * 0.03f), 0.75f + r.nextFloat() * 0.2f, 0.9f + r.nextFloat() * 0.1f);
+            switch (element) {
+                case FIRE -> power = mul(power, 1.08f);
+                case WATER -> mastery = mul(mastery, 1.1f);
+                case ICE -> durability = mul(durability, 1.1f);
+                case SAND -> precision = mul(precision, 1.1f);
+                default -> {}
+            }
+        }
 
         bulk = 0.85f + durability / 250f;
         height = 0.95f + power / 400f + stage * 0.02f;
@@ -117,11 +130,12 @@ public class StandData {
                 default -> Skill.SANCTUARY;
             };
         }
+        boolean el = element != Element.NONE;
         return switch (slot) {
             case 0 -> Skill.of(primary);
-            case 1 -> Skill.of(secondary);
+            case 1 -> el ? Skill.elemental(element) : Skill.of(secondary);
             case 2 -> Skill.form(form);
-            default -> Skill.ultimate(primary);
+            default -> el ? Skill.elementalUltimate(element) : Skill.ultimate(primary);
         };
     }
 
@@ -164,6 +178,7 @@ public class StandData {
         l.add((form == StandForm.WEAPON
                 ? Text.translatable("msg.standgen.form_weapon", form.text(), primary.weaponText())
                 : Text.translatable("msg.standgen.form", form.text())).formatted(Formatting.YELLOW));
+        if (element != Element.NONE) l.add(Text.translatable("msg.standgen.element", element.text()).formatted(Formatting.GOLD));
         l.add(Text.translatable("msg.standgen.stage", stage, Progression.labelText(milestones)).formatted(Formatting.AQUA));
         l.add(statLine("power", power).append("   ").append(statLine("speed", speed)).formatted(Formatting.WHITE));
         MutableText second = statLine("range", range).append("   ").append(statLine("precision", precision))
@@ -197,6 +212,7 @@ public class StandData {
         n.putInt("stage", stage);
         n.putInt("ms", milestones);
         n.putInt("form", formId);
+        n.putInt("el", element.id);
         for (int i = 0; i < scores.length; i++) n.putFloat("s" + i, scores[i]);
         return n;
     }
@@ -210,6 +226,7 @@ public class StandData {
         d.stage = n.getInt("stage");
         d.milestones = n.contains("ms") ? n.getInt("ms") : (1 << Math.min(d.stage, 30)) - 1;
         d.formId = n.contains("form") ? n.getInt("form") : -1;
+        d.element = Element.byId(n.contains("el") ? n.getInt("el") : 0);
         for (int i = 0; i < d.scores.length; i++) d.scores[i] = n.getFloat("s" + i);
         d.recalc();
         return d;
