@@ -22,7 +22,7 @@ import java.util.UUID;
 
 public class StandGenClient implements ClientModInitializer {
     private static final String CAT = "key.categories.standgen";
-    private static KeyBinding summon, skill1, skill2, skill3, skill4, mode, hold;
+    private static KeyBinding summon, skill1, skill2, skill3, skill4, mode, hold, mountKey;
     public static KeyBinding menuKey;
     private static boolean holdDown;
     private static int holdTicks;
@@ -36,6 +36,7 @@ public class StandGenClient implements ClientModInitializer {
         EntityModelLayerRegistry.registerModelLayer(StandModels.HUMANOID, StandModels::humanoid);
         EntityModelLayerRegistry.registerModelLayer(StandModels.WORN, StandModels::worn);
         EntityModelLayerRegistry.registerModelLayer(StandModels.WEAPON, StandModels::weapon);
+        EntityModelLayerRegistry.registerModelLayer(StandModels.ANIMALS, StandModels::animals);
         EntityModelLayerRegistry.registerModelLayer(StandModels.SWARM, StandModels::swarm);
         EntityModelLayerRegistry.registerModelLayer(StandModels.BACK, StandModels::back);
         // стенд Підтримка носиться на спині: шар на моделі гравця
@@ -77,6 +78,7 @@ public class StandGenClient implements ClientModInitializer {
         mode = key("key.standgen.mode", GLFW.GLFW_KEY_G);
         hold = key("key.standgen.attack", GLFW.GLFW_KEY_Z);
         menuKey = key("key.standgen.menu", GLFW.GLFW_KEY_K);
+        mountKey = key("key.standgen.mount", GLFW.GLFW_KEY_H);
 
         ClientPlayNetworking.registerGlobalReceiver(StandGenMod.HAS_STAND, (client, handler, buf, sender) -> {
             boolean has = buf.readBoolean();
@@ -92,7 +94,8 @@ public class StandGenClient implements ClientModInitializer {
                 for (int i = 0; i < sc.length; i++) sc[i] = buf.readFloat();
                 boolean edit = buf.readBoolean();
                 int el = buf.readInt();
-                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit, el);
+                int an = buf.readInt();
+                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit, el, an);
             }
             StandClientData fin = data;
             client.execute(() -> StandClientData.current = fin);
@@ -114,6 +117,7 @@ public class StandGenClient implements ClientModInitializer {
             while (skill4.wasPressed()) send(StandGenMod.ACT_SKILL4);
             while (mode.wasPressed()) send(StandGenMod.ACT_MODE);
             while (menuKey.wasPressed()) send(StandGenMod.ACT_MENU);
+            while (mountKey.wasPressed()) send(StandGenMod.ACT_MOUNT);
 
             // ручна атака: утримувати; пінг кожні ~0.75 с, щоб сервер не скинув стан
             boolean down = hold.isPressed();

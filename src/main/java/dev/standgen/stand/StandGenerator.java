@@ -46,6 +46,7 @@ public final class StandGenerator {
         d.stage = Integer.bitCount(d.milestones);
         d.rollForm();
         d.element = ElementRoll.roll(p, seed);
+        if (d.element == Element.NONE) d.animal = AnimalRoll.roll(p, seed);
         d.recalc();
         return d;
     }

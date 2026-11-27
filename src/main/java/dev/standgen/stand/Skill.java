@@ -40,18 +40,26 @@ public enum Skill {
     FROST_BOLT(220), BLIZZARD(1600),
     SAND_BLAST(220), SANDSTORM(1500),
     // слот 2 форми Стихія: перетворення стенда на Зброю або Броню
-    SHIFT(100);
+    SHIFT(100),
+    // тварини: слот 1, слот 2 (форма) і ультимейт (слот 3)
+    POUNCE(200), SCENT(500), HOWL(1500),                 // собака
+    MAUL(240), ROAR(600), HIBERNATE(1700),               // ведмідь
+    TALON_DIVE(220), UPDRAFT(500), GALE(1600),           // орел
+    TRAMPLE(220), KICK(300), GALLOP(1500);               // кінь
 
     /** Стадія, з якої відкривається слот. */
     public static final int[] UNLOCK = {0, 2, 3, 4};
 
     private static final Skill[] BY_TYPE = {EXCAVATE, BARRAGE, BASTION, DASH, PIERCE, RESURGENCE};
-    private static final Skill[] BY_FORM = {GRAB, WALL, THROW, BURST, PURIFY, SHIFT};   // порядок StandForm
+    private static final Skill[] BY_FORM = {GRAB, WALL, THROW, BURST, PURIFY, SHIFT, SHIFT};   // порядок StandForm
     private static final Skill[] SUPPORT = {PROSPECT, RALLY, FORTIFY, TAILWIND, SCOUT, MEND};   // порядок Archetype
     private static final Skill[] ULTIMATE = {QUAKE, FURY, CITADEL, TIMESTOP, ARROW_RAIN, SECOND_CHANCE};
 
     private static final Skill[] ELEMENT_SKILL = {null, FLAME_LANCE, TIDAL_JET, FROST_BOLT, SAND_BLAST};   // за Element.id
     private static final Skill[] ELEMENT_ULTIMATE = {null, INFERNO, DELUGE, BLIZZARD, SANDSTORM};
+    private static final Skill[] ANIMAL_A = {null, POUNCE, MAUL, TALON_DIVE, TRAMPLE};     // за Animal.id
+    private static final Skill[] ANIMAL_B = {null, SCENT, ROAR, UPDRAFT, KICK};
+    private static final Skill[] ANIMAL_ULT = {null, HOWL, HIBERNATE, GALE, GALLOP};
 
     public final int baseCooldown; // тіки
 
@@ -65,6 +73,9 @@ public enum Skill {
     public static Skill ultimate(Archetype a) { return ULTIMATE[a.ordinal()]; }
     public static Skill elemental(Element e) { return ELEMENT_SKILL[e.id]; }
     public static Skill elementalUltimate(Element e) { return ELEMENT_ULTIMATE[e.id]; }
+    public static Skill animalA(Animal a) { return ANIMAL_A[a.id]; }
+    public static Skill animalB(Animal a) { return ANIMAL_B[a.id]; }
+    public static Skill animalUltimate(Animal a) { return ANIMAL_ULT[a.id]; }
 
     /** Ультимейт-поле стихії (діє певний час навколо гравця). */
     public boolean isElementUltimate() {

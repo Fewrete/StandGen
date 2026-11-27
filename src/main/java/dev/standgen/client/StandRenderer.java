@@ -2,6 +2,7 @@ package dev.standgen.client;
 
 import dev.standgen.StandGenMod;
 import dev.standgen.entity.StandEntity;
+import dev.standgen.stand.Animal;
 import dev.standgen.stand.Archetype;
 import dev.standgen.stand.Skill;
 import net.minecraft.client.model.ModelPart;
@@ -29,13 +30,14 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         for (int i = 0; i < ORB_NAMES.length; i++) ORB_NAMES[i] = "orb" + i;
     }
 
-    private final ModelPart humanoid, weapon, swarm;
+    private final ModelPart humanoid, weapon, swarm, animals;
 
     public StandRenderer(EntityRendererFactory.Context ctx) {
         super(ctx);
         this.humanoid = ctx.getPart(StandModels.HUMANOID);
         this.weapon = ctx.getPart(StandModels.WEAPON);
         this.swarm = ctx.getPart(StandModels.SWARM);
+        this.animals = ctx.getPart(StandModels.ANIMALS);
     }
 
     private static final String[] ELEMENT_NAMES = {"", "fire", "water", "ice", "sand"};
@@ -86,6 +88,7 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
                 renderWeapon(e, age, tickDelta, m, vc, l, c1, c2, stage);
             }
             case SWARM -> renderSwarm(e, age, tickDelta, m, vc, l, c1, c2, stage);
+            case ANIMAL -> renderAnimal(e, age, tickDelta, headYaw, pitch, m, vc, l, c1, c2, stage);
             default -> {
                 float sx = e.getBulk();
                 m.scale(sx, e.getHeightScale(), sx);
@@ -202,6 +205,87 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
             default -> {                         // загальний жест
                 ra.pitch = -1.3f * s; la.pitch = -1.3f * s;
             }
+        }
+    }
+
+    // ---------------- Тварини ----------------
+    private static final String[] ANIMAL_GROUPS = {"", "dog", "bear", "eagle", "horse"};
+
+    private void renderAnimal(StandEntity e, float age, float td, float headYaw, float pitch, MatrixStack m,
+                              VertexConsumer vc, int l, float[] c1, float[] c2, int stage) {
+        int id = e.getAnimalId();
+        if (id <= 0 || id >= ANIMAL_GROUPS.length) return;
+        Animal an = Animal.byId(id);
+        ModelPart g = animals.getChild(ANIMAL_GROUPS[id]);
+
+        float k = an.scale * e.getHeightScale();
+        m.scale(k, k, k);
+        m.translate(0.0f, -1.501f, 0.0f);
+
+        // швидкість руху з зсуву між тіками (стенд рухається телепортом, тож ходу рахуємо самі)
+        float spd = MathHelper.clamp((float) Math.hypot(e.getX() - e.prevX, e.getZ() - e.prevZ) * 4f, 0f, 1f);
+        float ph = age * (0.6f + spd * 0.5f);
+        float swing = MathHelper.sin(ph) * 0.9f * spd;
+
+        Skill anim = e.getAnim();
+        float as = 0f;
+        if (anim != null) {
+            float ap = MathHelper.clamp(e.getAnimElapsed(td) / e.getAnimDur(), 0f, 1f);
+            as = MathHelper.sin(ap * MathHelper.PI);
+            float pulse = 1f + 0.1f * as;
+            m.scale(pulse, pulse, pulse);
+        }
+        boolean atk = e.isPunching();
+
+        ModelPart head = g.getChild("head"), tail = g.getChild("tail");
+        head.yaw = MathHelper.clamp(headYaw * RAD, -0.7f, 0.7f);
+        head.pitch = pitch * RAD * 0.5f - 0.5f * as;
+
+        if (an == Animal.EAGLE) {
+            boolean carry = e.isCarrying();
+            ModelPart wl = g.getChild("wing_l"), wr = g.getChild("wing_r");
+            ModelPart ll = g.getChild("leg_l"), lr = g.getChild("leg_r");
+            float flap = carry ? 0.15f + MathHelper.sin(age * 0.1f) * 0.05f
+                    : atk ? -0.5f : MathHelper.sin(age * 0.3f) * 0.55f + 0.15f;
+            wl.roll = -flap; wr.roll = flap;
+            tail.pitch = carry ? 0.1f : MathHelper.sin(age * 0.2f) * 0.1f + (atk ? -0.4f : 0f);
+            float legs = carry ? 0.55f : atk ? -0.9f : 0.25f;
+            ll.pitch = legs; lr.pitch = legs;
+            if (carry) {   // тримає гравця лапами й повторює нахил його польоту
+                float tilt = MathHelper.clamp(e.getPitch(), -80f, 80f) * RAD;
+                m.translate(0f, 0.75f, 0f);
+                m.multiply(RotationAxis.POSITIVE_X.rotation(tilt));
+                m.translate(0f, -0.75f, 0f);
+            }
+        } else {
+            ModelPart fl = g.getChild("leg_fl"), fr = g.getChild("leg_fr"), bl = g.getChild("leg_bl"), br = g.getChild("leg_br");
+            fl.pitch = swing; br.pitch = swing;
+            fr.pitch = -swing; bl.pitch = -swing;
+            if (atk) {
+                float hit = MathHelper.sin(age * 1.3f);
+                switch (an) {
+                    case DOG -> head.pitch += 0.5f * hit;                                  // швидкі укуси
+                    case BEAR -> { fl.pitch = -1.2f + hit * 0.4f; fr.pitch = -1.2f - hit * 0.4f; head.pitch += 0.2f; }   // дибки, удар лапами
+                    default -> { fl.pitch = -0.9f * Math.max(0f, hit); fr.pitch = -0.9f * Math.max(0f, -hit); }         // кінь б'є копитами
+                }
+            }
+            switch (an) {
+                case DOG -> { tail.pitch = 0.6f; tail.yaw = MathHelper.sin(age * 0.35f) * 0.5f; }
+                case BEAR -> { tail.pitch = 0.2f; tail.yaw = MathHelper.sin(age * 0.1f) * 0.1f; }
+                default -> {   // кінь: хвіст гойдається, голова трохи опущена
+                    tail.pitch = 0.15f + MathHelper.sin(age * 0.12f) * 0.1f;
+                    head.pitch += 0.35f;
+                }
+            }
+        }
+
+        g.render(m, vc, l, OverlayTexture.DEFAULT_UV, c1[0], c1[1], c1[2], 0.92f);
+        if (stage >= 2) {
+            m.push();
+            m.scale(1.06f, 1.04f, 1.06f);
+            m.translate(0.0f, -0.05f, 0.0f);
+            g.render(m, vc, FULLBRIGHT, OverlayTexture.DEFAULT_UV, c2[0], c2[1], c2[2], 0.3f);
+            m.pop();
         }
     }
 

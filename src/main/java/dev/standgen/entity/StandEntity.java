@@ -5,6 +5,8 @@ import dev.standgen.stand.Archetype;
 import dev.standgen.stand.StandData;
 import dev.standgen.stand.StandForm;
 import dev.standgen.stand.StandManager;
+import dev.standgen.stand.Animal;
+import dev.standgen.stand.AnimalRide;
 import dev.standgen.stand.Element;
 import dev.standgen.stand.ElementZone;
 import dev.standgen.stand.Skill;
@@ -50,6 +52,9 @@ public class StandEntity extends LivingEntity {
     private static final TrackedData<Integer> KIND = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> STYLE = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> ELEMENT = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    /** Тварина форми Тварина (Animal.id) і режим (0 звичайний, 1 орел несе гравця в планеруванні). */
+    private static final TrackedData<Integer> ANIMAL = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
+    private static final TrackedData<Integer> MODE = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     /** Анімація здібності: 0 = немає, інакше Skill.ordinal()+1. */
     private static final TrackedData<Integer> ANIM = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
     private static final TrackedData<Integer> ANIM_LEFT = DataTracker.registerData(StandEntity.class, TrackedDataHandlerRegistry.INTEGER);
@@ -85,6 +90,8 @@ public class StandEntity extends LivingEntity {
         dataTracker.startTracking(KIND, 0);
         dataTracker.startTracking(STYLE, 0);
         dataTracker.startTracking(ELEMENT, 0);
+        dataTracker.startTracking(ANIMAL, 0);
+        dataTracker.startTracking(MODE, 0);
         dataTracker.startTracking(ANIM, 0);
         dataTracker.startTracking(ANIM_LEFT, 0);
         dataTracker.startTracking(ANIM_DUR, 1);
@@ -116,7 +123,7 @@ public class StandEntity extends LivingEntity {
             case RESURGENCE, SECOND_CHANCE -> 24;
             case DASH -> 10;
             case FLAME_LANCE, TIDAL_JET, FROST_BOLT, SAND_BLAST -> 12;
-            case INFERNO, DELUGE, BLIZZARD, SANDSTORM -> 30;
+            case INFERNO, DELUGE, BLIZZARD, SANDSTORM, HOWL, HIBERNATE, GALE, GALLOP -> 30;
             default -> 14;
         };
     }
@@ -165,9 +172,18 @@ public class StandEntity extends LivingEntity {
         dataTracker.set(KIND, d.primary.ordinal());
         dataTracker.set(STYLE, d.style);
         dataTracker.set(ELEMENT, d.element.id);
+        dataTracker.set(ANIMAL, d.form == StandForm.ANIMAL ? d.animal.id : 0);
     }
 
     public int getElementId() { return dataTracker.get(ELEMENT); }
+    public int getAnimalId() { return dataTracker.get(ANIMAL); }
+    public boolean isCarrying() { return dataTracker.get(MODE) == 1; }
+
+    /** Висота сидіння для їзди (кінь, ведмідь). */
+    @Override
+    public double getMountedHeightOffset() {
+        return Animal.byId(getAnimalId()).seat;
+    }
 
     public void setTarget(LivingEntity t) {
         this.target = t;
@@ -246,52 +262,62 @@ public class StandEntity extends LivingEntity {
         }
 
         if (support) { target = null; barrageTicks = 0; }   // стенд підтримки нічого не б'є
+        if (d.form == StandForm.ANIMAL && AnimalRide.isGliding(ownerId)) target = null;   // орел несе гравця й не б'ється
 
         // ---- рух ----
-        Vec3d goal;
-        double lerp = 0.35;
-        float faceYaw = owner.getHeadYaw();
-        if (target != null) {
-            Vec3d tp = target.getPos();
-            Vec3d dir = tp.subtract(owner.getPos()).multiply(1, 0, 1);
-            if (dir.lengthSquared() < 1.0E-4) dir = new Vec3d(0, 0, 1);
-            dir = dir.normalize();
-            goal = tp.subtract(dir.multiply(1.1)).add(0, 0.1, 0);
-            faceYaw = (float) Math.toDegrees(Math.atan2(-(tp.x - getX()), tp.z - getZ()));
-            lerp = 0.6;
-        } else if (holding) {
-            Vec3d aim = owner.getEyePos().add(owner.getRotationVec(1f).multiply(Math.min(reach, 2.4)));
-            goal = new Vec3d(aim.x, aim.y - 1.0, aim.z);
-            lerp = 0.6;
+        boolean beast = d.form == StandForm.ANIMAL && d.animal != Animal.NONE;
+        if (beast) {
+            beastMove(owner, d);
         } else {
-            float yawRad = owner.getBodyYaw() * 0.017453292f;
-            Vec3d fwd = new Vec3d(-MathHelper.sin(yawRad), 0, MathHelper.cos(yawRad));
-            Vec3d right = new Vec3d(-MathHelper.cos(yawRad), 0, -MathHelper.sin(yawRad));
-            goal = owner.getPos().add(fwd.multiply(-0.9)).add(right.multiply(0.8))
-                    .add(0, 0.35 + Math.sin(age * 0.12) * 0.08, 0);
+            noClip = true;
+            setNoGravity(true);
+            Vec3d goal;
+            double lerp = 0.35;
+            float faceYaw = owner.getHeadYaw();
+            if (target != null) {
+                Vec3d tp = target.getPos();
+                Vec3d dir = tp.subtract(owner.getPos()).multiply(1, 0, 1);
+                if (dir.lengthSquared() < 1.0E-4) dir = new Vec3d(0, 0, 1);
+                dir = dir.normalize();
+                goal = tp.subtract(dir.multiply(1.1)).add(0, 0.1, 0);
+                faceYaw = (float) Math.toDegrees(Math.atan2(-(tp.x - getX()), tp.z - getZ()));
+                lerp = 0.6;
+            } else if (holding) {
+                Vec3d aim = owner.getEyePos().add(owner.getRotationVec(1f).multiply(Math.min(reach, 2.4)));
+                goal = new Vec3d(aim.x, aim.y - 1.0, aim.z);
+                lerp = 0.6;
+            } else {
+                float yawRad = owner.getBodyYaw() * 0.017453292f;
+                Vec3d fwd = new Vec3d(-MathHelper.sin(yawRad), 0, MathHelper.cos(yawRad));
+                Vec3d right = new Vec3d(-MathHelper.cos(yawRad), 0, -MathHelper.sin(yawRad));
+                goal = owner.getPos().add(fwd.multiply(-0.9)).add(right.multiply(0.8))
+                        .add(0, 0.35 + Math.sin(age * 0.12) * 0.08, 0);
+            }
+            Vec3d np = getPos().lerp(goal, lerp);
+            double far = fullLeash + 10;
+            if (np.squaredDistanceTo(owner.getPos()) > far * far) np = goal;
+            setPosition(np.x, np.y, np.z);
+            float ny = MathHelper.lerpAngleDegrees(0.4f, getYaw(), faceYaw);
+            setYaw(ny);
+            setBodyYaw(ny);
+            setHeadYaw(ny);
         }
-        Vec3d np = getPos().lerp(goal, lerp);
-        double far = fullLeash + 10;
-        if (np.squaredDistanceTo(owner.getPos()) > far * far) np = goal;
-        setPosition(np.x, np.y, np.z);
-        float ny = MathHelper.lerpAngleDegrees(0.4f, getYaw(), faceYaw);
-        setYaw(ny);
-        setBodyYaw(ny);
-        setHeadYaw(ny);
 
         // ---- атака ----
-        boolean fighting = target != null && squaredDistanceTo(target) < 9.0;
+        double fightR = !beast ? 9.0 : d.animal == Animal.HORSE ? 12.25 : d.animal == Animal.BEAR ? 7.0 : 9.0;
+        boolean fighting = target != null && squaredDistanceTo(target) < fightR;
         dataTracker.set(ATTACKING, fighting || holding);
         if (hitCooldown > 0) hitCooldown--;
         if (fighting && hitCooldown <= 0) {
             boolean barrage = barrageTicks > 0;
-            hitCooldown = barrage ? 3 : Math.max(8, 20 - d.speed / 10);
+            hitCooldown = barrage ? 3 : beastCooldown(d, Math.max(8, 20 - d.speed / 10));
             boolean crit = w.random.nextFloat() < d.critChance();
             float dmg = d.standDamage() * (barrage ? 0.3f : 1f) * (crit ? 1.5f : 1f);
             target.timeUntilRegen = 0;
             if (target.damage(w.getDamageSources().playerAttack(owner), dmg)) {
                 if (!barrage) target.takeKnockback(0.4, owner.getX() - target.getX(), owner.getZ() - target.getZ());
                 Abilities.elementHit(target, d);
+                if (beast) Abilities.beastHit(w, owner, d, target, barrage);
                 w.spawnParticles(ParticleTypes.CRIT, target.getX(), target.getBodyY(0.5), target.getZ(), crit ? 14 : 3, 0.2, 0.2, 0.2, 0.1);
                 w.playSound(null, target.getX(), target.getY(), target.getZ(),
                         SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, SoundCategory.PLAYERS, 0.6f, barrage ? 1.4f : 1.0f);
@@ -322,6 +348,110 @@ public class StandEntity extends LivingEntity {
         if (d.element != Element.NONE && age % 5 == 0) {
             seenParticles(w, ElementZone.particle(d.element), 1, 0.3, 0.5, 0.3, 0.01);
         }
+    }
+
+    /** Швидкість ударів залежить від тварини. */
+    private static int beastCooldown(StandData d, int base) {
+        if (d.form != StandForm.ANIMAL) return base;
+        return switch (d.animal) {
+            case DOG -> Math.max(6, (int) (base * 0.65f));      // швидкі часті укуси
+            case BEAR -> (int) (base * 1.35f);                  // повільні важкі удари
+            case EAGLE -> Math.max(7, (int) (base * 0.9f));
+            default -> base;
+        };
+    }
+
+    /**
+     * Рух тварин. Кожна має свою манеру: собака бігає навколо й кидається, ведмідь важко йде позаду,
+     * орел кружляє високо і пікірує, кінь іде поруч і розганяється на ворога. Під час їзди рухом керує гравець.
+     */
+    private void beastMove(ServerPlayerEntity owner, StandData d) {
+        Animal an = d.animal;
+        boolean glide = AnimalRide.isGliding(ownerId);
+        dataTracker.set(MODE, glide ? 1 : 0);
+        if (hasPassengers()) {
+            ride(owner, d, an);
+            return;
+        }
+        noClip = true;
+        setNoGravity(true);
+        setVelocity(Vec3d.ZERO);
+
+        float yawRad = owner.getBodyYaw() * 0.017453292f;
+        Vec3d fwd = new Vec3d(-MathHelper.sin(yawRad), 0, MathHelper.cos(yawRad));
+        Vec3d right = new Vec3d(-MathHelper.cos(yawRad), 0, -MathHelper.sin(yawRad));
+        Vec3d goal;
+        double lerp = 0.3;
+        float faceYaw = owner.getHeadYaw();
+        boolean faceMove = true;
+        float pitchOut = 0f;
+        double t = age;
+        if (glide) {                      // орел тримає гравця лапами зверху й несе його
+            goal = owner.getPos().add(0, 0.6, 0);
+            lerp = 0.95;
+            faceYaw = owner.getYaw();
+            faceMove = false;
+            pitchOut = owner.getPitch();
+        } else if (target != null) {
+            Vec3d tp = target.getPos();
+            Vec3d dir = tp.subtract(getPos()).multiply(1, 0, 1);
+            dir = dir.lengthSquared() < 1.0E-4 ? new Vec3d(0, 0, 1) : dir.normalize();
+            switch (an) {
+                case DOG -> { goal = tp.subtract(dir.multiply(0.9)); lerp = 0.75; }                 // кидається впритул
+                case EAGLE -> { goal = tp.add(0, 0.7, 0); lerp = 0.7; }                             // пікірує на ціль
+                case BEAR -> { goal = tp.subtract(dir.multiply(1.5)); lerp = 0.3; }                 // повільний і важкий
+                default -> { goal = tp.subtract(dir.multiply(1.6)); lerp = 0.55; }                  // кінь розганяється
+            }
+            faceYaw = (float) Math.toDegrees(Math.atan2(-(tp.x - getX()), tp.z - getZ()));
+            faceMove = false;
+        } else {
+            Vec3d base = owner.getPos();
+            switch (an) {
+                case DOG -> {                 // жвава, бігає то вперед, то вбік
+                    goal = base.add(fwd.multiply(1.4 + Math.sin(t * 0.03))).add(right.multiply(Math.sin(t * 0.05) * 2.4));
+                    lerp = 0.3;
+                }
+                case BEAR -> { goal = base.add(fwd.multiply(-1.7)).add(right.multiply(1.2)); lerp = 0.15; }
+                case EAGLE -> {               // кружляє високо над власником
+                    goal = base.add(Math.cos(t * 0.035) * 3.0, 3.4 + Math.sin(t * 0.07) * 0.5, Math.sin(t * 0.035) * 3.0);
+                    lerp = 0.12;
+                }
+                default -> { goal = base.add(fwd.multiply(-0.8)).add(right.multiply(-1.5)); lerp = 0.3; }   // кінь збоку
+            }
+        }
+        Vec3d np = getPos().lerp(goal, lerp);
+        double far = d.leash() + 10;
+        if (np.squaredDistanceTo(owner.getPos()) > far * far) np = goal;
+        if (faceMove) {
+            double mx = np.x - getX(), mz = np.z - getZ();
+            if (mx * mx + mz * mz > 0.0025) faceYaw = (float) Math.toDegrees(Math.atan2(-mx, mz));
+        }
+        setPosition(np.x, np.y, np.z);
+        float ny = MathHelper.lerpAngleDegrees(glide ? 0.9f : 0.4f, getYaw(), faceYaw);
+        setYaw(ny);
+        setBodyYaw(ny);
+        setHeadYaw(ny);
+        setPitch(pitchOut);
+    }
+
+    /** Їзда (кінь, ведмідь): гравець на спині, рухом керує сервер за клавішами гравця. */
+    private void ride(ServerPlayerEntity owner, StandData d, Animal an) {
+        noClip = false;
+        setNoGravity(false);
+        float yaw = owner.getYaw();
+        setYaw(yaw);
+        setBodyYaw(yaw);
+        setHeadYaw(yaw);
+        setPitch(0f);
+        double sp = an.rideSpeed * (1.0 + d.speed * 0.004);
+        double yr = yaw * 0.017453292f;
+        float fwdIn = owner.forwardSpeed, sideIn = owner.sidewaysSpeed;
+        double vx = -Math.sin(yr) * fwdIn * sp + (-Math.cos(yr)) * (-sideIn) * sp * 0.7;
+        double vz = Math.cos(yr) * fwdIn * sp + (-Math.sin(yr)) * (-sideIn) * sp * 0.7;
+        double vy = getVelocity().y;
+        if (horizontalCollision && isOnGround() && (vx != 0 || vz != 0)) vy = 0.46;   // само перестрибує блок
+        setVelocity(vx, vy, vz);
+        fallDistance = 0;
     }
 
     /** Частинки самого стенда бачать лише гравці, у яких теж є стенд. */

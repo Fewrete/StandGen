@@ -1,4 +1,4 @@
-# StandGen 0.2.6b (Fabric 1.20.1)
+# StandGen 0.2.7 (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -6,16 +6,18 @@ evolves together with your progress through the game. Inspired by the "stand" id
 - Requires: **Fabric Loader** + **Fabric API** (the only dependency), Minecraft 1.20.1, Java 17.
 - Languages: English, Ukrainian (uk_ua), Russian (ru_ru), German (de_de).
 
-## What's new in this update: the Elemental form
-- **A new, separate stand form: Elemental** (Fire, Water, Ice or Sand). What draws a soul to an element is hidden, so discover it by playing.
-  Souls that match no element still have a small chance to get a random one. An elemental stand uses the humanoid body with its own colour,
-  element particles and a small stat bonus, and its normal hits add a short element effect (burning, slowing, freezing, blinding).
-- **Skills of the Elemental form:** slot 1 your type skill, slot 2 an **element ray** (Flame Lance, Tidal Jet, Frost Bolt, Sand Blast),
-  slot 3 **Transformation**, slot 4 an **element field** (Inferno, Deluge, Blizzard, Sandstorm) that lasts several seconds around you.
-- **Transformation** turns the stand into a Weapon, then into Armor, then back to Elemental (armor needs empty armor slots). Your skills stay the same.
-- **Soul menu page 2** shows the element and where each of the four skills comes from. Use the `<` `>` buttons or the arrow keys to switch pages.
-  In creative or as an operator you can change the form and the element for testing.
-- Optional element textures: put `stand_fire.png`, `stand_water.png`, `stand_ice.png` or `stand_sand.png` (same layout as `stand.png`) into `textures/entity`.
+## What's new in this update: Beast stands
+- **A new, separate stand form: Beast** with four animals: **Dog, Bear, Eagle and Horse**. What draws a soul to an animal is hidden, so discover it by playing.
+  Souls that match nothing still have a small chance to get a random animal. Each animal has its own model, behaviour, three skills and passive bonus:
+  - **Dog:** fast, bites often and slows its prey. Pounce, Scent (highlights enemies), Pack Howl (buffs allies, scares enemies).
+  - **Bear:** slow and heavy, its blows hit everything around the target. Maul, Roar, Hibernation (strong defence).
+  - **Eagle:** circles high above you and dives on enemies. Talon Dive, Updraft, Gale.
+  - **Horse:** fast, kicks enemies away. Trample (charge), Kick (stun), Gallop (speed and jump).
+- **Riding:** press `H` to ride the Horse or the Bear (sneak to get off). Press `H` with the Eagle to take off: the eagle grips you from above and you glide
+  like with elytra (no elytra needed). Press `H` again to stop gliding. The Dog cannot be ridden.
+- **Skills of the Beast form:** slot 1 your type skill, slots 2, 3 and 4 the animal skills.
+- **Soul menu page 2** shows the animal and where each skill comes from. In creative or as an operator you can change the form and the animal for testing.
+- Optional textures are shared with the other forms (`stand.png`).
 
 ## Getting a stand
 - **Craft:** Arrow + Diamond + Gold Ingot (shapeless).
@@ -45,7 +47,7 @@ MANUAL: the stand only follows you and attacks while Z is held.
   This gives a main type and a second type: Miner, Fighter, Builder, Traveler, Archer, Survivor.
 - **Stage** = number of completed milestones (iron, diamonds, Nether, fortress, Wither, End, dragon, elytra). Higher stage means higher stats,
   more skills and a more impressive look.
-- **Form** (chosen when you awaken, weighted by your soul): Humanoid (+precision), Armor (+durability), Weapon (+power), Swarm (+speed, range), Support, and the rare Elemental form.
+- **Form** (chosen when you awaken, weighted by your soul): Humanoid (+precision), Armor (+durability), Weapon (+power), Swarm (+speed, range), Support, and the rare Elemental and Beast forms.
   Small details (horns, crest, spikes, lamp, halo, quiver...) depend on your type and a seed.
 - **16 skills:** 6 by type, 4 by form, 6 ultimates (one per main type).
 

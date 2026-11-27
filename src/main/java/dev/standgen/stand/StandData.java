@@ -23,6 +23,7 @@ public class StandData {
     public int milestones;   // маска виконаних віх (для назви етапу)
     public int formId = -1;  // збережена форма; -1 = старий збережений стенд без цього поля
     public Element element = Element.NONE;   // стихія (визначається при пробудженні, зберігається)
+    public Animal animal = Animal.NONE;      // тварина форми ANIMAL (визначається при пробудженні, зберігається)
 
     // Похідне (перераховується через recalc)
     public int power, speed, range, durability, precision, mastery;
@@ -55,9 +56,20 @@ public class StandData {
         Random fr = new Random(seed * 31L + 7L);
         float u = fr.nextFloat();
         if (formId < 0) formId = pickIndex(formWeights(false), u);   // старий стенд: рахуємо як раніше (4 форми)
-        // стихія й форма Стихія завжди йдуть парою
-        if (formId == StandForm.ELEMENTAL.ordinal() && element == Element.NONE) element = Element.FIRE;
-        if (formId != StandForm.ELEMENTAL.ordinal() && element != Element.NONE) formId = StandForm.ELEMENTAL.ordinal();
+        // стихія з формою Стихія та тварина з формою Тварина завжди йдуть парою
+        int elF = StandForm.ELEMENTAL.ordinal(), anF = StandForm.ANIMAL.ordinal();
+        if (formId == elF) {
+            animal = Animal.NONE;
+            if (element == Element.NONE) element = Element.FIRE;
+        } else if (formId == anF) {
+            element = Element.NONE;
+            if (animal == Animal.NONE) animal = Animal.DOG;
+        } else if (element != Element.NONE) {
+            formId = elF;
+            animal = Animal.NONE;
+        } else if (animal != Animal.NONE) {
+            formId = anF;
+        }
         form = shift != null ? shift : StandForm.values()[formId];
         style = fr.nextInt(4);
         switch (form) {
@@ -67,6 +79,15 @@ public class StandData {
             case HUMANOID -> { precision = mul(precision, 1.15f); mastery = mul(mastery, 1.1f); }
             case SUPPORT -> { power = mul(power, 0.6f); range = mul(range, 1.2f); precision = mul(precision, 1.2f); mastery = mul(mastery, 1.4f); }
             case ELEMENTAL -> { mastery = mul(mastery, 1.15f); power = mul(power, 1.05f); }
+            case ANIMAL -> {
+                switch (animal) {
+                    case DOG -> { speed = mul(speed, 1.2f); precision = mul(precision, 1.1f); power = mul(power, 0.9f); }
+                    case BEAR -> { power = mul(power, 1.25f); durability = mul(durability, 1.25f); speed = mul(speed, 0.8f); }
+                    case EAGLE -> { range = mul(range, 1.25f); speed = mul(speed, 1.1f); durability = mul(durability, 0.85f); }
+                    case HORSE -> { speed = mul(speed, 1.3f); durability = mul(durability, 1.05f); power = mul(power, 0.95f); }
+                    default -> {}
+                }
+            }
         }
 
         float h1 = frac(primary.hue + (r.nextFloat() - 0.5f) * 0.06f);
@@ -84,6 +105,10 @@ public class StandData {
                 case SAND -> precision = mul(precision, 1.1f);
                 default -> {}
             }
+        }
+
+        if (animal != Animal.NONE) {
+            color1 = MathHelper.hsvToRgb(frac(animal.hue + (r.nextFloat() - 0.5f) * 0.03f), animal.sat, animal.val);
         }
 
         bulk = 0.85f + durability / 250f;
@@ -133,7 +158,7 @@ public class StandData {
 
     // Здібності за слотами: 0 основний тип, 1 додатковий тип, 2 форма, 3 ультимейт
     public Skill skill(int slot) {
-        if (form == StandForm.SUPPORT) {
+        if (baseForm() == StandForm.SUPPORT) {
             return switch (slot) {
                 case 0 -> Skill.support(primary);
                 case 1 -> Skill.support(secondary);
@@ -142,11 +167,12 @@ public class StandData {
             };
         }
         boolean el = baseForm() == StandForm.ELEMENTAL && element != Element.NONE;
+        boolean an = baseForm() == StandForm.ANIMAL && animal != Animal.NONE;
         return switch (slot) {
             case 0 -> Skill.of(primary);
-            case 1 -> el ? Skill.elemental(element) : Skill.of(secondary);
-            case 2 -> el ? Skill.SHIFT : Skill.form(form);
-            default -> el ? Skill.elementalUltimate(element) : Skill.ultimate(primary);
+            case 1 -> el ? Skill.elemental(element) : an ? Skill.animalA(animal) : Skill.of(secondary);
+            case 2 -> el ? Skill.SHIFT : an ? Skill.animalB(animal) : Skill.form(form);
+            default -> el ? Skill.elementalUltimate(element) : an ? Skill.animalUltimate(animal) : Skill.ultimate(primary);
         };
     }
 
@@ -192,6 +218,7 @@ public class StandData {
                 ? Text.translatable("msg.standgen.form_weapon", form.text(), primary.weaponText())
                 : Text.translatable("msg.standgen.form", form.text())).formatted(Formatting.YELLOW));
         if (element != Element.NONE) l.add(Text.translatable("msg.standgen.element", element.text()).formatted(Formatting.GOLD));
+        if (animal != Animal.NONE) l.add(Text.translatable("msg.standgen.animal", animal.text()).formatted(Formatting.GOLD));
         l.add(Text.translatable("msg.standgen.stage", stage, Progression.labelText(milestones)).formatted(Formatting.AQUA));
         l.add(statLine("power", power).append("   ").append(statLine("speed", speed)).formatted(Formatting.WHITE));
         MutableText second = statLine("range", range).append("   ").append(statLine("precision", precision))
@@ -226,6 +253,7 @@ public class StandData {
         n.putInt("ms", milestones);
         n.putInt("form", formId);
         n.putInt("el", element.id);
+        n.putInt("an", animal.id);
         for (int i = 0; i < scores.length; i++) n.putFloat("s" + i, scores[i]);
         return n;
     }
@@ -240,6 +268,7 @@ public class StandData {
         d.milestones = n.contains("ms") ? n.getInt("ms") : (1 << Math.min(d.stage, 30)) - 1;
         d.formId = n.contains("form") ? n.getInt("form") : -1;
         d.element = Element.byId(n.contains("el") ? n.getInt("el") : 0);
+        d.animal = Animal.byId(n.contains("an") ? n.getInt("an") : 0);
         for (int i = 0; i < d.scores.length; i++) d.scores[i] = n.getFloat("s" + i);
         d.recalc();
         return d;

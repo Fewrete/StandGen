@@ -15,6 +15,7 @@ public final class StandModels {
     public static final EntityModelLayer WORN = new EntityModelLayer(StandGenMod.id("stand_worn"), "main");
     public static final EntityModelLayer WEAPON = new EntityModelLayer(StandGenMod.id("stand_weapon"), "main");
     public static final EntityModelLayer SWARM = new EntityModelLayer(StandGenMod.id("stand_swarm"), "main");
+    public static final EntityModelLayer ANIMALS = new EntityModelLayer(StandGenMod.id("stand_animals"), "main");
     public static final EntityModelLayer BACK = new EntityModelLayer(StandGenMod.id("stand_back"), "main");
     public static final int SHARDS = 24;
     public static final int ORBS = 4;
@@ -184,6 +185,72 @@ public final class StandModels {
     }
 
     /** Шість видів зброї + 4 руни-орби навколо. Імена груп = порядок Archetype. */
+    /** Усі чотири тварини в одному шарі: групи dog, bear, eagle, horse. Земля на y = 24, перед = -z. Спільна текстура stand.png. */
+    public static TexturedModelData animals() {
+        ModelData md = new ModelData();
+        ModelPartData root = md.getRoot();
+        // UV всіх частин у безпечній зоні текстури (нижче очей і вище позначки), нижня межа v + висота <= 48
+        final int u = 0, v = 16;
+
+        // ---------- собака ----------
+        ModelPartData dog = root.addChild("dog", b(), N);
+        dog.addChild("body", b().uv(u, v).cuboid(-3, -3, -7, 6, 6, 14), ModelTransform.pivot(0, 15, 0));
+        ModelPartData dh = dog.addChild("head", b().uv(u, v).cuboid(-3, -3, -6, 6, 6, 6), ModelTransform.pivot(0, 13, -7));
+        dh.addChild("snout", b().uv(u, v).cuboid(-1.5f, 0, -9, 3, 3, 3), N);
+        dh.addChild("ear_l", b().uv(u, v).cuboid(1, -5, -2, 2, 2, 1), N);
+        dh.addChild("ear_r", b().uv(u, v).cuboid(-3, -5, -2, 2, 2, 1), N);
+        dog.addChild("leg_fl", b().uv(u, v).cuboid(-1, 0, -1, 2, 7, 2), ModelTransform.pivot(2, 17, -5));
+        dog.addChild("leg_fr", b().uv(u, v).cuboid(-1, 0, -1, 2, 7, 2), ModelTransform.pivot(-2, 17, -5));
+        dog.addChild("leg_bl", b().uv(u, v).cuboid(-1, 0, -1, 2, 7, 2), ModelTransform.pivot(2, 17, 5));
+        dog.addChild("leg_br", b().uv(u, v).cuboid(-1, 0, -1, 2, 7, 2), ModelTransform.pivot(-2, 17, 5));
+        dog.addChild("tail", b().uv(u, v).cuboid(-1, -1, 0, 2, 2, 6), ModelTransform.pivot(0, 13, 7));
+
+        // ---------- ведмідь ----------
+        ModelPartData bear = root.addChild("bear", b(), N);
+        ModelPartData bb = bear.addChild("body", b().uv(u, v).cuboid(-6, -5.5f, -9, 12, 11, 18), ModelTransform.pivot(0, 12, 0));
+        bb.addChild("hump", b().uv(u, v).cuboid(-5, -9, -7, 10, 4, 8), N);
+        ModelPartData bh = bear.addChild("head", b().uv(u, v).cuboid(-4, -4, -7, 8, 8, 7), ModelTransform.pivot(0, 11, -9));
+        bh.addChild("snout", b().uv(u, v).cuboid(-2, 0.5f, -10, 4, 3, 3), N);
+        bh.addChild("ear_l", b().uv(u, v).cuboid(2.5f, -6, -3, 2, 2, 1), N);
+        bh.addChild("ear_r", b().uv(u, v).cuboid(-4.5f, -6, -3, 2, 2, 1), N);
+        bear.addChild("leg_fl", b().uv(u, v).cuboid(-2.5f, 0, -2.5f, 5, 9, 5), ModelTransform.pivot(4, 15, -6));
+        bear.addChild("leg_fr", b().uv(u, v).cuboid(-2.5f, 0, -2.5f, 5, 9, 5), ModelTransform.pivot(-4, 15, -6));
+        bear.addChild("leg_bl", b().uv(u, v).cuboid(-2.5f, 0, -2.5f, 5, 9, 5), ModelTransform.pivot(4, 15, 6));
+        bear.addChild("leg_br", b().uv(u, v).cuboid(-2.5f, 0, -2.5f, 5, 9, 5), ModelTransform.pivot(-4, 15, 6));
+        bear.addChild("tail", b().uv(u, v).cuboid(-1.5f, -1.5f, 0, 3, 3, 2), ModelTransform.pivot(0, 8, 9));
+
+        // ---------- орел ----------
+        ModelPartData eagle = root.addChild("eagle", b(), N);
+        eagle.addChild("body", b().uv(u, v).cuboid(-2.5f, -2.5f, -5, 5, 5, 10), ModelTransform.pivot(0, 12, 0));
+        ModelPartData eh = eagle.addChild("head", b().uv(u, v).cuboid(-2, -2, -4, 4, 4, 4), ModelTransform.pivot(0, 10.5f, -5));
+        eh.addChild("beak", b().uv(u, v).cuboid(-1, 0, -6, 2, 2, 2), N);
+        ModelPartData wl = eagle.addChild("wing_l", b().uv(u, v).cuboid(0, -0.5f, -3, 14, 1, 7), ModelTransform.pivot(2.5f, 10.5f, -1));
+        wl.addChild("tip", b().uv(u, v).cuboid(14, -0.5f, -2.5f, 8, 1, 5), N);
+        ModelPartData wr = eagle.addChild("wing_r", b().uv(u, v).cuboid(-14, -0.5f, -3, 14, 1, 7), ModelTransform.pivot(-2.5f, 10.5f, -1));
+        wr.addChild("tip", b().uv(u, v).cuboid(-22, -0.5f, -2.5f, 8, 1, 5), N);
+        eagle.addChild("tail", b().uv(u, v).cuboid(-2.5f, -0.5f, 0, 5, 1, 7), ModelTransform.pivot(0, 11.5f, 5));
+        ModelPartData ll = eagle.addChild("leg_l", b().uv(u, v).cuboid(-0.5f, 0, -0.5f, 1, 4, 1), ModelTransform.pivot(1.3f, 14.5f, 0));
+        ll.addChild("claw", b().uv(u, v).cuboid(-1, 3.5f, -1.5f, 2, 1.5f, 2.5f), N);
+        ModelPartData lr = eagle.addChild("leg_r", b().uv(u, v).cuboid(-0.5f, 0, -0.5f, 1, 4, 1), ModelTransform.pivot(-1.3f, 14.5f, 0));
+        lr.addChild("claw", b().uv(u, v).cuboid(-1, 3.5f, -1.5f, 2, 1.5f, 2.5f), N);
+
+        // ---------- кінь ----------
+        ModelPartData horse = root.addChild("horse", b(), N);
+        horse.addChild("body", b().uv(u, v).cuboid(-4, -4.5f, -10, 8, 9, 20), ModelTransform.pivot(0, 11, 0));
+        ModelPartData hn = horse.addChild("neck", b().uv(u, v).cuboid(-2, -8, -3, 4, 10, 5), ModelTransform.pivot(0, 8, -9));
+        hn.addChild("mane", b().uv(u, v).cuboid(-0.75f, -8, 2, 1.5f, 10, 2), N);
+        ModelPartData hh = horse.addChild("head", b().uv(u, v).cuboid(-2.5f, -1, -8, 5, 5, 9), ModelTransform.pivot(0, 1, -11));
+        hh.addChild("ear_l", b().uv(u, v).cuboid(0.8f, -3.5f, -1, 1.5f, 3, 1.5f), N);
+        hh.addChild("ear_r", b().uv(u, v).cuboid(-2.3f, -3.5f, -1, 1.5f, 3, 1.5f), N);
+        horse.addChild("leg_fl", b().uv(u, v).cuboid(-1.5f, 0, -1.5f, 3, 9, 3), ModelTransform.pivot(2.5f, 15, -7.5f));
+        horse.addChild("leg_fr", b().uv(u, v).cuboid(-1.5f, 0, -1.5f, 3, 9, 3), ModelTransform.pivot(-2.5f, 15, -7.5f));
+        horse.addChild("leg_bl", b().uv(u, v).cuboid(-1.5f, 0, -1.5f, 3, 9, 3), ModelTransform.pivot(2.5f, 15, 8));
+        horse.addChild("leg_br", b().uv(u, v).cuboid(-1.5f, 0, -1.5f, 3, 9, 3), ModelTransform.pivot(-2.5f, 15, 8));
+        horse.addChild("tail", b().uv(u, v).cuboid(-1, 0, 0, 2, 9, 2), ModelTransform.pivot(0, 7, 10));
+
+        return TexturedModelData.of(md, 64, 64);
+    }
+
     public static TexturedModelData weapon() {
         ModelData md = new ModelData();
         ModelPartData root = md.getRoot();

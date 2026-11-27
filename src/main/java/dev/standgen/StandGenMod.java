@@ -67,7 +67,7 @@ public class StandGenMod implements ModInitializer {
 
     /** Коди дій з клієнта. */
     public static final int ACT_SUMMON = 0, ACT_SKILL1 = 1, ACT_SKILL2 = 2, ACT_SKILL3 = 3, ACT_SKILL4 = 4,
-            ACT_MODE = 5, ACT_HOLD_ON = 6, ACT_HOLD_OFF = 7, ACT_MENU = 8;
+            ACT_MODE = 5, ACT_HOLD_ON = 6, ACT_HOLD_OFF = 7, ACT_MENU = 8, ACT_MOUNT = 9;
 
     public static Identifier id(String path) { return new Identifier(MOD_ID, path); }
 
@@ -96,6 +96,7 @@ public class StandGenMod implements ModInitializer {
             for (int i = 0; i < Archetype.COUNT; i++) b.writeFloat(d.scores[i]);
             b.writeBoolean(canEdit(p));
             b.writeInt(d.element.id);
+            b.writeInt(d.animal.id);
         }
         ServerPlayNetworking.send(p, STAND_DATA, b);
     }
@@ -132,21 +133,38 @@ public class StandGenMod implements ModInitializer {
             // тестовий вибір стихії: 0 = немає (форма Стихія знімається), 1..COUNT (форма Стихія вмикається)
             StandRuntime.dismiss(p);
             d.shift = null;
+            d.animal = Animal.NONE;
             d.element = Element.byId(Math.floorMod(a, Element.COUNT + 1));
             if (d.element == Element.NONE) {
-                if (d.formId == StandForm.ELEMENTAL.ordinal()) d.formId = StandForm.HUMANOID.ordinal();
+                if (d.formId == StandForm.ELEMENTAL.ordinal() || d.formId == StandForm.ANIMAL.ordinal()) d.formId = StandForm.HUMANOID.ordinal();
             } else {
                 d.formId = StandForm.ELEMENTAL.ordinal();
+            }
+        } else if (type == 5) {
+            // тестовий вибір тварини: 0 = немає (форма Тварина знімається), 1..COUNT (форма Тварина вмикається)
+            StandRuntime.dismiss(p);
+            d.shift = null;
+            d.element = Element.NONE;
+            d.animal = Animal.byId(Math.floorMod(a, Animal.COUNT + 1));
+            if (d.animal == Animal.NONE) {
+                if (d.formId == StandForm.ELEMENTAL.ordinal() || d.formId == StandForm.ANIMAL.ordinal()) d.formId = StandForm.HUMANOID.ordinal();
+            } else {
+                d.formId = StandForm.ANIMAL.ordinal();
             }
         } else if (type == 1) {
             StandRuntime.dismiss(p);
             d.shift = null;
             d.formId = Math.floorMod(a, StandForm.values().length);
-            // Стихія й форма Стихія йдуть парою
+            // Стихія з формою Стихія, тварина з формою Тварина: йдуть парами
             if (d.formId == StandForm.ELEMENTAL.ordinal()) {
+                d.animal = Animal.NONE;
                 if (d.element == Element.NONE) d.element = Element.FIRE;
+            } else if (d.formId == StandForm.ANIMAL.ordinal()) {
+                d.element = Element.NONE;
+                if (d.animal == Animal.NONE) d.animal = Animal.DOG;
             } else {
                 d.element = Element.NONE;
+                d.animal = Animal.NONE;
             }
         } else {
             return;
@@ -248,6 +266,7 @@ public class StandGenMod implements ModInitializer {
                     case ACT_HOLD_ON -> StandRuntime.setHold(player, true);
                     case ACT_HOLD_OFF -> StandRuntime.setHold(player, false);
                     case ACT_MENU -> openMenu(player);
+                    case ACT_MOUNT -> AnimalRide.mount(player);
                     default -> {}
                 }
             });
@@ -304,12 +323,15 @@ public class StandGenMod implements ModInitializer {
         });
 
         ElementSignals.register();
+        AnimalRide.register();
+        AnimalSignals.register();
 
         // Еволюція: раз на 5 секунд перевіряємо прогрес
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             StandRuntime.tickArmor(server);
             TimeStop.tick(server);
             ElementZone.tick(server);
+            AnimalRide.tick(server);
             if (server.getTicks() % 100 != 0) return;
             StandManager m = StandManager.get(server);
             for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {
@@ -347,7 +369,7 @@ public class StandGenMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 sendHasStand(handler.player, StandManager.get(server).get(handler.player.getUuid()) != null));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> { StandRuntime.dismiss(handler.player); StandRuntime.forget(handler.player.getUuid()); });
-        ServerLifecycleEvents.SERVER_STOPPING.register(s -> { TimeStop.endAll(); ElementZone.endAll(); });
+        ServerLifecycleEvents.SERVER_STOPPING.register(s -> { TimeStop.endAll(); ElementZone.endAll(); AnimalRide.endAll(); });
         ServerLifecycleEvents.SERVER_STOPPED.register(s -> StandRuntime.clear());
 
         // ---- команди ----

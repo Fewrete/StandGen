@@ -26,6 +26,7 @@ public class StandScreen extends Screen {
     private static final int SOUL_Y = 62;
     private ButtonWidget formBtn;
     private ButtonWidget elemBtn;
+    private ButtonWidget animBtn;
     private int page;
 
     public StandScreen() { super(Text.translatable("standgen.menu.title")); }
@@ -37,12 +38,15 @@ public class StandScreen extends Screen {
         StandClientData d = StandClientData.current;
         formBtn = null;
         elemBtn = null;
+        animBtn = null;
         addDrawableChild(ButtonWidget.builder(Text.literal("<"), b -> setPage(0)).dimensions(width / 2 - 8, height - 28, 28, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal(">"), b -> setPage(1)).dimensions(width / 2 + 22, height - 28, 28, 20).build());
         if (page == 1) {
             if (d != null && d.canEdit()) {
                 elemBtn = addDrawableChild(ButtonWidget.builder(Text.empty(), b -> cycleElement())
                         .dimensions(width / 2 - 150, height - 28, 140, 20).build());
+                animBtn = addDrawableChild(ButtonWidget.builder(Text.empty(), b -> cycleAnimal())
+                        .dimensions(width / 2 - 150, height - 52, 140, 20).build());
             }
         } else if (d != null && d.canEdit()) {
             int bx = left() + 190;
@@ -66,6 +70,14 @@ public class StandScreen extends Screen {
         page = p;
         clearChildren();
         init();
+    }
+
+    private void cycleAnimal() {
+        StandClientData d = StandClientData.current;
+        if (d == null) return;
+        PacketByteBuf buf = PacketByteBufs.create();
+        buf.writeInt(5); buf.writeInt(d.animal() + 1); buf.writeFloat(0f);
+        ClientPlayNetworking.send(StandGenMod.EDIT, buf);
     }
 
     private void cycleElement() {
@@ -150,8 +162,13 @@ public class StandScreen extends Screen {
     private void renderElementPage(DrawContext ctx, StandClientData d, StandData sd) {
         int x = width / 2 - 130;
         ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("✦ " + d.name() + " ✦"), width / 2, 12, GOLD);
-        ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.element", sd.element.text()), width / 2, 30,
-                sd.element.isNone() ? GRAY : 0xFFFF55);
+        boolean beast = sd.baseForm() == StandForm.ANIMAL;
+        if (beast) {
+            ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.animal", sd.animal.text()), width / 2, 30, 0xFFFF55);
+        } else {
+            ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.element", sd.element.text()), width / 2, 30,
+                    sd.element.isNone() ? GRAY : 0xFFFF55);
+        }
         ctx.drawText(textRenderer, Text.translatable("standgen.menu.abilities"), x, 56, GRAY, true);
         boolean elemental = sd.baseForm() == StandForm.ELEMENTAL;
         boolean support = sd.baseForm() == StandForm.SUPPORT;
@@ -163,7 +180,8 @@ public class StandScreen extends Screen {
                     ? Text.translatable("msg.standgen.skill", key, sk.text())
                     : Text.translatable("msg.standgen.skill_locked", key, sk.text(), sd.unlockStage(i));
             if (!support) {
-                String src = i == 2 ? "form" : (elemental && (i == 1 || i == 3)) ? "element" : "type";
+                boolean side = i == 1 || i == 3;
+                String src = i == 2 ? (beast ? "animal" : "form") : (elemental && side) ? "element" : (beast && side) ? "animal" : "type";
                 line.append(Text.literal("   ")).append(Text.translatable("standgen.menu.src." + src).formatted(Formatting.DARK_GRAY));
             }
             ctx.drawText(textRenderer, line, x, 74 + i * 18, open ? 0x55FF55 : GRAY, true);
@@ -171,6 +189,7 @@ public class StandScreen extends Screen {
         if (d.canEdit()) {
             ctx.drawText(textRenderer, Text.translatable("standgen.menu.edit"), x, 74 + 4 * 18 + 8, 0xFF5555, true);
             if (elemBtn != null) elemBtn.setMessage(Text.translatable("standgen.menu.elem_btn", sd.element.text()));
+            if (animBtn != null) animBtn.setMessage(Text.translatable("standgen.menu.anim_btn", sd.animal.text()));
         }
         ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("2 / 2"), width / 2 + 6, height - 42, GRAY);
     }

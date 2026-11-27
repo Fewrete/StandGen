@@ -9,6 +9,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.EndermanEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectCategory;
@@ -273,6 +274,9 @@ public final class Abilities {
                 return true;
             }
             case SHIFT -> { return StandRuntime.shiftForm(p, d); }
+            case POUNCE, SCENT, HOWL, MAUL, ROAR, HIBERNATE, TALON_DIVE, UPDRAFT, GALE, TRAMPLE, KICK, GALLOP -> {
+                return beastSkill(s, p, w, d);
+            }
             case THROW -> { return thrust(p, w, stand, d); }
             case BURST -> { return burst(p, w, d); }
             case QUAKE -> { return quake(p, w, d); }
@@ -404,6 +408,229 @@ public final class Abilities {
         }
         sound(w, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ARROW_SHOOT, 1f, 1.8f);
         return true;
+    }
+
+    // ================= тварини =================
+
+    /** Цілі в конусі перед гравцем. */
+    private static List<LivingEntity> cone(ServerWorld w, ServerPlayerEntity p, double range, double minDot) {
+        Vec3d eye = p.getEyePos();
+        Vec3d look = p.getRotationVec(1f);
+        List<LivingEntity> out = new ArrayList<>();
+        for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(range), x -> validTarget(x, p))) {
+            Vec3d to = e.getPos().add(0, e.getHeight() * 0.5, 0).subtract(eye);
+            double len = to.length();
+            if (len > range || len < 1.0E-3) continue;
+            if (to.normalize().dotProduct(look) >= minDot) out.add(e);
+        }
+        return out;
+    }
+
+    /** Усі цілі в смузі вздовж погляду гравця (кожна один раз). */
+    private static List<LivingEntity> lane(ServerWorld w, ServerPlayerEntity p, double len, double radius) {
+        Vec3d from = p.getPos().add(0, p.getHeight() * 0.5, 0);
+        Vec3d dir = p.getRotationVec(1f);
+        List<LivingEntity> out = new ArrayList<>();
+        for (double t = 0.5; t <= len; t += 0.5) {
+            Vec3d pt = from.add(dir.multiply(t));
+            for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, new Box(pt, pt).expand(radius), x -> validTarget(x, p))) {
+                if (!out.contains(e)) out.add(e);
+            }
+        }
+        return out;
+    }
+
+    private static void hurt(ServerWorld w, ServerPlayerEntity p, LivingEntity e, float dmg) {
+        e.timeUntilRegen = 0;
+        e.damage(w.getDamageSources().playerAttack(p), dmg);
+    }
+
+    private static boolean beastSkill(Skill s, ServerPlayerEntity p, ServerWorld w, StandData d) {
+        Vec3d look = p.getRotationVec(1f);
+        Vec3d flat = new Vec3d(look.x, 0, look.z);
+        flat = flat.lengthSquared() < 1.0E-4 ? new Vec3d(0, 0, 1) : flat.normalize();
+        float dmg = 4 + d.power * 0.08f;
+        Vec3d at = p.getPos();
+        switch (s) {
+            case POUNCE -> {   // собака: стрибок на ціль і укус
+                LivingEntity t = lookedEntity(w, p, 12);
+                if (t == null) t = nearestHostile(w, p, 12);
+                Vec3d leap = t != null ? t.getPos().subtract(at).multiply(1, 0, 1) : flat;
+                leap = leap.lengthSquared() < 1.0E-4 ? flat : leap.normalize();
+                AnimalRide.launch(p, new Vec3d(leap.x * 1.3, 0.45, leap.z * 1.3));
+                if (t != null) {
+                    hurt(w, p, t, dmg);
+                    t.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 1));
+                    StandEntity gs = StandRuntime.getStand(p);
+                    chain(w, gs != null ? gs.getPos().add(0, 0.6, 0) : p.getEyePos(), t.getPos().add(0, t.getHeight() * 0.5, 0), d);
+                    w.spawnParticles(ParticleTypes.CRIT, t.getX(), t.getBodyY(0.5), t.getZ(), 14, 0.3, 0.3, 0.3, 0.2);
+                }
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_WOLF_GROWL, 1f, 1.1f);
+            }
+            case SCENT -> {    // собака: підсвічує всіх ворогів довкола, власник швидшає
+                int n = 0;
+                for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(28), x -> x instanceof Monster && x.isAlive())) {
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, d.dur(240), 0, false, false));
+                    n++;
+                }
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(240), 0));
+                ring(w, ParticleTypes.POOF, at, 3, 24);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_FOX_SNIFF, 1f, 0.8f);
+            }
+            case HOWL -> {     // собака: виття зграї, союзники сильніші й швидші, вороги лякаються
+                double r = 14;
+                for (ServerPlayerEntity a : allies(w, p, r)) {
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, d.dur(240), 0));
+                    a.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(240), 0));
+                }
+                for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r), x -> validTarget(x, p))) {
+                    if (e.squaredDistanceTo(p) > r * r || e instanceof PlayerEntity) continue;
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 140, 0));
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 0));
+                    if (e instanceof MobEntity mob) mob.setTarget(null);
+                }
+                StandFxEntity.spawnPulse(w, at, d.color1, d.color2, (float) r, 18);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_WOLF_HOWL, 1.5f, 0.9f);
+            }
+            case MAUL -> {     // ведмідь: важкий удар лапою по конусу
+                List<LivingEntity> hit = cone(w, p, 4.5, 0.45);
+                if (hit.isEmpty()) return false;
+                for (LivingEntity e : hit) {
+                    hurt(w, p, e, 6 + d.power * 0.12f);
+                    e.takeKnockback(1.3, -look.x, -look.z);
+                    e.addVelocity(0, 0.25, 0);
+                    e.velocityModified = true;
+                    w.spawnParticles(ParticleTypes.CRIT, e.getX(), e.getBodyY(0.5), e.getZ(), 12, 0.3, 0.4, 0.3, 0.2);
+                }
+                Vec3d mid = p.getEyePos().add(look.multiply(2.2));
+                w.spawnParticles(ParticleTypes.SWEEP_ATTACK, mid.x, mid.y - 0.3, mid.z, 3, 0.6, 0.2, 0.6, 0.0);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_RAVAGER_ATTACK, 1f, 0.8f);
+            }
+            case ROAR -> {     // ведмідь: рев відкидає й послаблює ворогів, власник отримує щит
+                double r = 9;
+                for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r), x -> validTarget(x, p))) {
+                    if (e.squaredDistanceTo(p) > r * r) continue;
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 160, 0));
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 1));
+                    e.takeKnockback(1.0, p.getX() - e.getX(), p.getZ() - e.getZ());
+                    if (e instanceof MobEntity mob) mob.setTarget(null);
+                }
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, Math.min(3, d.stage / 2)));
+                StandFxEntity.spawnPulse(w, at, d.color1, d.color2, (float) r, 16);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_RAVAGER_ROAR, 1.5f, 0.8f);
+            }
+            case HIBERNATE -> {   // ведмідь: зимова сплячка, міцний захист і відновлення, але повільний
+                int dur = d.dur(140);
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, dur, 2));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, dur, 1));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, dur, 0));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, dur, 0));
+                ring(w, ParticleTypes.HEART, at, 1.5, 16);
+                StandFxEntity.spawnPulse(w, at, d.color1, d.color2, 4f, 14);
+                sound(w, at.x, at.y, at.z, SoundEvents.BLOCK_BEACON_POWER_SELECT, 1f, 0.6f);
+            }
+            case TALON_DIVE -> {  // орел: стрімкий налет уздовж погляду
+                AnimalRide.launch(p, look.multiply(1.5).add(0, 0.2, 0));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 60, 0, true, false));
+                for (LivingEntity e : lane(w, p, 9, 1.3)) {
+                    hurt(w, p, e, dmg);
+                    e.takeKnockback(0.8, -look.x, -look.z);
+                    w.spawnParticles(ParticleTypes.CRIT, e.getX(), e.getBodyY(0.5), e.getZ(), 10, 0.3, 0.3, 0.3, 0.2);
+                }
+                for (double t = 0.5; t <= 9; t += 0.5) {
+                    Vec3d pt = p.getEyePos().add(look.multiply(t));
+                    w.spawnParticles(ParticleTypes.CLOUD, pt.x, pt.y, pt.z, 1, 0.05, 0.05, 0.05, 0.0);
+                }
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_PHANTOM_SWOOP, 1f, 1.2f);
+            }
+            case UPDRAFT -> {     // орел: висхідний потік підкидає власника вгору, ворогів поруч теж
+                AnimalRide.launch(p, new Vec3d(look.x * 0.3, 1.25, look.z * 0.3));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 200, 0, true, false));
+                for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(4), x -> validTarget(x, p))) {
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 20, 1));
+                }
+                ring(w, ParticleTypes.CLOUD, at, 3, 28);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_PHANTOM_FLAP, 1.2f, 0.8f);
+            }
+            case GALE -> {        // орел: буревій відкидає всіх навколо, власник швидшає
+                double r = 11;
+                for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, p.getBoundingBox().expand(r), x -> validTarget(x, p))) {
+                    if (e.squaredDistanceTo(p) > r * r) continue;
+                    Vec3d away = e.getPos().subtract(at).multiply(1, 0, 1);
+                    away = away.lengthSquared() < 1.0E-4 ? flat : away.normalize();
+                    hurt(w, p, e, 2 + d.power * 0.04f);
+                    e.setVelocity(away.x * 1.8, 0.7, away.z * 1.8);
+                    e.velocityModified = true;
+                }
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, d.dur(160), 1));
+                StandFxEntity.spawnPulse(w, at, d.color1, d.color2, (float) r, 18);
+                ring(w, ParticleTypes.CLOUD, at, r * 0.6, 40);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_ENDER_DRAGON_FLAP, 1.5f, 1.0f);
+            }
+            case TRAMPLE -> {     // кінь: розгін і затоптування всього на шляху
+                AnimalRide.launch(p, new Vec3d(flat.x * 1.6, 0.15, flat.z * 1.6));
+                for (LivingEntity e : lane(w, p, 7, 1.5)) {
+                    hurt(w, p, e, dmg);
+                    e.takeKnockback(1.0, -flat.x, -flat.z);
+                    w.spawnParticles(ParticleTypes.CRIT, e.getX(), e.getBodyY(0.5), e.getZ(), 10, 0.3, 0.3, 0.3, 0.2);
+                }
+                ring(w, ParticleTypes.POOF, at, 1.2, 14);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_HORSE_GALLOP, 1.2f, 0.9f);
+            }
+            case KICK -> {        // кінь: короткий сильний копняк, що оглушає
+                List<LivingEntity> hit = cone(w, p, 3.4, 0.3);
+                if (hit.isEmpty()) return false;
+                for (LivingEntity e : hit) {
+                    hurt(w, p, e, 3 + d.power * 0.06f);
+                    e.takeKnockback(2.2, -look.x, -look.z);
+                    e.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20, 5));
+                    w.spawnParticles(ParticleTypes.CRIT, e.getX(), e.getBodyY(0.5), e.getZ(), 10, 0.3, 0.3, 0.3, 0.2);
+                }
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_HORSE_ANGRY, 1f, 1.0f);
+            }
+            default -> {          // GALLOP, кінь: галоп, швидкість, стрибок і захист
+                int dur = d.dur(160);
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, dur, 2));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, dur, 1));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, dur, 0));
+                ring(w, ParticleTypes.POOF, at, 1.5, 20);
+                StandFxEntity.spawnPulse(w, at, d.color1, d.color2, 5f, 12);
+                sound(w, at.x, at.y, at.z, SoundEvents.ENTITY_HORSE_GALLOP, 1.5f, 1.1f);
+            }
+        }
+        return true;
+    }
+
+    /** Особливий ефект звичайного удару тварини. */
+    public static void beastHit(ServerWorld w, ServerPlayerEntity owner, StandData d, LivingEntity t, boolean barrage) {
+        switch (d.animal) {
+            case BEAR -> {      // розмашистий удар зачіпає сусідів
+                for (LivingEntity e : w.getEntitiesByClass(LivingEntity.class, t.getBoundingBox().expand(2.2),
+                        x -> x != t && validTarget(x, owner))) {
+                    hurt(w, owner, e, d.standDamage() * 0.5f);
+                    if (!barrage) e.takeKnockback(0.7, owner.getX() - e.getX(), owner.getZ() - e.getZ());
+                }
+                if (!barrage) t.takeKnockback(0.7, owner.getX() - t.getX(), owner.getZ() - t.getZ());
+            }
+            case HORSE -> { if (!barrage) t.takeKnockback(0.9, owner.getX() - t.getX(), owner.getZ() - t.getZ()); }
+            case DOG -> t.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20, 0));
+            case EAGLE -> t.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0, false, false));
+            default -> {}
+        }
+    }
+
+    /** Постійні бонуси власника від тварини (раз на 2 с). */
+    private static void animalPassive(ServerPlayerEntity p, StandData d) {
+        if (d.form != StandForm.ANIMAL) return;
+        switch (d.animal) {
+            case DOG -> p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 80, 0, true, false));
+            case BEAR -> p.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 80, 0, true, false));
+            case HORSE -> {
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 80, 0, true, false));
+                p.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 80, 0, true, false));
+            }
+            default -> {}
+        }
     }
 
     /** Стихія додає невеликий ефект до звичайних ударів стенда й броні. */
@@ -592,6 +819,7 @@ public final class Abilities {
 
     /** Пасивний бонус від основного типу, поки стенд викликано. */
     public static void applyPassive(ServerPlayerEntity p, StandData d) {
+        animalPassive(p, d);
         StatusEffect eff = switch (d.primary) {
             case MINER -> StatusEffects.HASTE;
             case FIGHTER -> StatusEffects.STRENGTH;

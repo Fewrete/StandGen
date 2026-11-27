@@ -15,6 +15,8 @@ public class StandManager extends PersistentState {
     private final Map<UUID, StandData> map = new HashMap<>();
     /** Приховані лічильники для визначення стихії (див. ElementRoll). Індекс = ElementSignals.FIRE/ICE/SAND/WATER. */
     private final Map<UUID, float[]> signals = new HashMap<>();
+    /** Приховані лічильники приручення й розведення для форми Звір (AnimalSignals). */
+    private final Map<UUID, float[]> animalSignals = new HashMap<>();
 
     public static StandManager get(MinecraftServer server) {
         return server.getOverworld().getPersistentStateManager()
@@ -30,6 +32,16 @@ public class StandManager extends PersistentState {
     /** Лічильники гравця (завжди не null). Масив можна читати; змінювати лише через addSignal. */
     public float[] signals(UUID id) {
         return signals.computeIfAbsent(id, k -> new float[ElementSignals.COUNT]);
+    }
+
+    public float[] animalSignals(UUID id) {
+        return animalSignals.computeIfAbsent(id, k -> new float[AnimalSignals.COUNT]);
+    }
+
+    public void addAnimalSignal(UUID id, int idx, float v) {
+        if (v <= 0f) return;
+        animalSignals(id)[idx] += v;
+        markDirty();
     }
 
     public void addSignal(UUID id, int idx, float v) {
@@ -56,6 +68,14 @@ public class StandManager extends PersistentState {
             sig.add(c);
         }
         nbt.put("signals", sig);
+        NbtList asig = new NbtList();
+        for (Map.Entry<UUID, float[]> e : animalSignals.entrySet()) {
+            NbtCompound c = new NbtCompound();
+            c.putUuid("owner", e.getKey());
+            for (int i = 0; i < e.getValue().length; i++) c.putFloat("v" + i, e.getValue()[i]);
+            asig.add(c);
+        }
+        nbt.put("asignals", asig);
         return nbt;
     }
 
@@ -72,6 +92,13 @@ public class StandManager extends PersistentState {
             float[] v = new float[ElementSignals.COUNT];
             for (int k = 0; k < v.length; k++) v[k] = c.getFloat("v" + k);
             m.signals.put(c.getUuid("owner"), v);
+        }
+        NbtList asig = nbt.getList("asignals", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < asig.size(); i++) {
+            NbtCompound c = asig.getCompound(i);
+            float[] v = new float[AnimalSignals.COUNT];
+            for (int k = 0; k < v.length; k++) v[k] = c.getFloat("v" + k);
+            m.animalSignals.put(c.getUuid("owner"), v);
         }
         return m;
     }
