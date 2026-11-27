@@ -170,5 +170,9 @@
   "standgen.menu.animal": "Tier: %s",
   "standgen.menu.anim_btn": "Tier: %s (Klick zum Wechseln)",
   "standgen.menu.src.animal": "Tier",
-  "key.standgen.mount": "Reiten / gleiten (Tier-Stand)"
+  "key.standgen.mount": "Reiten / gleiten (Tier-Stand)",
+  "standgen.element.fire_alt": "Blaues Feuer",
+  "standgen.element.water_alt": "Tropisches Wasser",
+  "standgen.element.ice_alt": "Tiefblaues Eis",
+  "standgen.element.sand_alt": "Roter Sand"
 }

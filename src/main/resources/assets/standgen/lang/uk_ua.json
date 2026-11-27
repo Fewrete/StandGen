@@ -170,5 +170,9 @@
   "standgen.menu.animal": "Тварина: %s",
   "standgen.menu.anim_btn": "Тварина: %s (натисни, щоб змінити)",
   "standgen.menu.src.animal": "тварина",
-  "key.standgen.mount": "Осідлати / ширяти (тваринний стенд)"
+  "key.standgen.mount": "Осідлати / ширяти (тваринний стенд)",
+  "standgen.element.fire_alt": "Синій вогонь",
+  "standgen.element.water_alt": "Тропічна вода",
+  "standgen.element.ice_alt": "Глибокий синій лід",
+  "standgen.element.sand_alt": "Червоний пісок"
 }

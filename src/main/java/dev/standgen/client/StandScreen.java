@@ -84,7 +84,9 @@ public class StandScreen extends Screen {
         StandClientData d = StandClientData.current;
         if (d == null) return;
         PacketByteBuf buf = PacketByteBufs.create();
-        buf.writeInt(4); buf.writeInt(d.element() + 1); buf.writeFloat(0f);
+        // індекс: 0 = немає, 2*(стихія-1)+1 = звичайний покрас, +1 = рідкісний; кнопка проходить усі по колу
+        int cur = d.element() == 0 ? 0 : 2 * (d.element() - 1) + 1 + Math.max(0, d.variant());
+        buf.writeInt(4); buf.writeInt(cur + 1); buf.writeFloat(0f);
         ClientPlayNetworking.send(StandGenMod.EDIT, buf);
     }
 
@@ -166,7 +168,7 @@ public class StandScreen extends Screen {
         if (beast) {
             ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.animal", sd.animal.text()), width / 2, 30, 0xFFFF55);
         } else {
-            ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.element", sd.element.text()), width / 2, 30,
+            ctx.drawCenteredTextWithShadow(textRenderer, Text.translatable("standgen.menu.element", sd.element.text(sd.variant == 1)), width / 2, 30,
                     sd.element.isNone() ? GRAY : 0xFFFF55);
         }
         ctx.drawText(textRenderer, Text.translatable("standgen.menu.abilities"), x, 56, GRAY, true);
@@ -188,7 +190,7 @@ public class StandScreen extends Screen {
         }
         if (d.canEdit()) {
             ctx.drawText(textRenderer, Text.translatable("standgen.menu.edit"), x, 74 + 4 * 18 + 8, 0xFF5555, true);
-            if (elemBtn != null) elemBtn.setMessage(Text.translatable("standgen.menu.elem_btn", sd.element.text()));
+            if (elemBtn != null) elemBtn.setMessage(Text.translatable("standgen.menu.elem_btn", sd.element.text(sd.variant == 1)));
             if (animBtn != null) animBtn.setMessage(Text.translatable("standgen.menu.anim_btn", sd.animal.text()));
         }
         ctx.drawCenteredTextWithShadow(textRenderer, Text.literal("2 / 2"), width / 2 + 6, height - 42, GRAY);

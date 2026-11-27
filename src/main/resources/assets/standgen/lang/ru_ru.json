@@ -170,5 +170,9 @@
   "standgen.menu.animal": "Животное: %s",
   "standgen.menu.anim_btn": "Животное: %s (нажми, чтобы сменить)",
   "standgen.menu.src.animal": "животное",
-  "key.standgen.mount": "Оседлать / парить (звериный стенд)"
+  "key.standgen.mount": "Оседлать / парить (звериный стенд)",
+  "standgen.element.fire_alt": "Синий огонь",
+  "standgen.element.water_alt": "Тропическая вода",
+  "standgen.element.ice_alt": "Глубокий синий лёд",
+  "standgen.element.sand_alt": "Красный песок"
 }

@@ -19,7 +19,10 @@ import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
+import net.minecraft.particle.DustColorTransitionParticleEffect;
+import net.minecraft.particle.ParticleEffect;
 import net.minecraft.particle.ParticleTypes;
+import org.joml.Vector3f;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -31,6 +34,7 @@ import net.minecraft.util.Hand;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -54,12 +58,12 @@ public final class StandRuntime {
 
     public static void clear() {
         ACTIVE.clear(); COOLDOWN.clear(); MANUAL.clear(); HOLD.clear(); REVIVE.clear();
-        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear(); WEAPON_HELD.clear(); SUPPORT_ON.clear();
+        ARMOR_ON.clear(); BARRAGE.clear(); NEXT_HIT.clear(); STANCE.clear(); WEAPON_HELD.clear(); SUPPORT_ON.clear(); MORPH.clear();
     }
 
     public static void forget(UUID id) {
         ACTIVE.remove(id); COOLDOWN.remove(id); MANUAL.remove(id); HOLD.remove(id); REVIVE.remove(id);
-        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id); WEAPON_HELD.remove(id); SUPPORT_ON.remove(id);
+        ARMOR_ON.remove(id); BARRAGE.remove(id); NEXT_HIT.remove(id); STANCE.remove(id); WEAPON_HELD.remove(id); SUPPORT_ON.remove(id); MORPH.remove(id);
     }
 
     public static StandEntity getStand(ServerPlayerEntity p) {
@@ -284,9 +288,11 @@ public final class StandRuntime {
                 SoundCategory.PLAYERS, 0.8f, on ? 0.7f : 1.2f);
     }
 
-    /** Здібність форми Стихія: Стихія -> Зброя -> Броня -> Стихія. Стенд перезбирається в новій формі. */
+    /** Здібність форми Стихія: Стихія -> Зброя -> Броня -> Підтримка -> Стихія. Стенд перезбирається в новій формі. */
     public static boolean shiftForm(ServerPlayerEntity p, StandData d) {
-        StandForm next = d.shift == null ? StandForm.WEAPON : d.shift == StandForm.WEAPON ? StandForm.ARMORED : null;
+        StandForm next = d.shift == null ? StandForm.WEAPON
+                : d.shift == StandForm.WEAPON ? StandForm.ARMORED
+                : d.shift == StandForm.ARMORED ? StandForm.SUPPORT : null;
         if (next == StandForm.ARMORED) {
             for (EquipmentSlot s : StandArmor.SLOTS) {
                 if (!p.getEquippedStack(s).isEmpty() && !StandArmor.isStandArmor(p.getEquippedStack(s))) {
@@ -295,16 +301,70 @@ public final class StandRuntime {
                 }
             }
         }
-        dismiss(p);            // знімає сутність, броню й зброю старої форми (ручний режим зберігається)
-        d.shift = next;
-        d.recalc();
-        toggle(p);             // збирає стенд у новій формі: сутність, броня або зброя в руках
+        if (MORPH.containsKey(p.getUuid())) return false;   // перетворення вже триває
+        // анімація перетворення: стара форма скручується й зменшується, потім стенд з'являється в новій
+        StandEntity cur = getStand(p);
+        if (cur != null) cur.playAnim(Skill.SHIFT, MORPH_TICKS);
+        MORPH.put(p.getUuid(), new Morph(MORPH_TICKS, next));
         ServerWorld w = (ServerWorld) p.getWorld();
-        StandFxEntity.spawnPulse(w, p.getPos(), d.color1, d.color2, 3.5f, 12);
-        w.spawnParticles(ElementZone.particle(d.element), p.getX(), p.getY() + 1, p.getZ(), 30, 0.6, 0.8, 0.6, 0.15);
-        w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1f, 1.4f);
-        p.sendMessage(Text.translatable("msg.standgen.form", d.form.text()).formatted(Formatting.GOLD), true);
+        w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ENDERMAN_TELEPORT, SoundCategory.PLAYERS, 0.8f, 0.6f);
         return true;
+    }
+
+    // ---- перетворення (Стихія -> Зброя -> Броня -> Підтримка) з анімацією ----
+    private static final int MORPH_TICKS = 12;
+
+    private static final class Morph {
+        int left;
+        final StandForm next;
+        Morph(int left, StandForm next) { this.left = left; this.next = next; }
+    }
+
+    private static final Map<UUID, Morph> MORPH = new HashMap<>();
+
+    private static Vector3f vec(int c) {
+        return new Vector3f((c >> 16 & 255) / 255f, (c >> 8 & 255) / 255f, (c & 255) / 255f);
+    }
+
+    /** Спіраль частинок кольорів стихії навколо власника, що стискається до середини перетворення. */
+    private static void morphParticles(ServerWorld w, ServerPlayerEntity p, StandData d, float prog) {
+        DustColorTransitionParticleEffect fx = new DustColorTransitionParticleEffect(vec(d.color1), vec(d.color2), 1.3f);
+        ParticleEffect main = d.element != Element.NONE ? ElementZone.particle(d.element) : ParticleTypes.END_ROD;
+        for (int i = 0; i < 6; i++) {
+            double a = prog * 14 + i * (Math.PI / 3);
+            double y = p.getY() + 0.1 + ((i * 0.33 + prog * 2.0) % 2.0);
+            double r = 1.1 - 0.55 * Math.sin(prog * Math.PI);
+            double x = p.getX() + Math.cos(a) * r, z = p.getZ() + Math.sin(a) * r;
+            w.spawnParticles(fx, x, y, z, 1, 0, 0, 0, 0);
+            if (i % 2 == 0) w.spawnParticles(main, x, y, z, 1, 0.05, 0.05, 0.05, 0.01);
+        }
+    }
+
+    private static void tickMorph(MinecraftServer server) {
+        if (MORPH.isEmpty()) return;
+        Iterator<Map.Entry<UUID, Morph>> it = MORPH.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<UUID, Morph> en = it.next();
+            ServerPlayerEntity p = server.getPlayerManager().getPlayer(en.getKey());
+            StandData d = p == null ? null : StandManager.get(server).get(en.getKey());
+            if (p == null || d == null || !p.isAlive()) { it.remove(); continue; }
+            Morph mo = en.getValue();
+            ServerWorld w = (ServerWorld) p.getWorld();
+            morphParticles(w, p, d, (MORPH_TICKS - mo.left) / (float) MORPH_TICKS);
+            if (--mo.left > 0) continue;
+            it.remove();
+            // момент перетворення: збираємо стенд у новій формі й граємо появу
+            dismiss(p);            // знімає сутність, броню й зброю старої форми (ручний режим зберігається)
+            d.shift = mo.next;
+            d.recalc();
+            toggle(p);             // збирає стенд у новій формі: сутність, броня або зброя в руках
+            StandEntity ns = getStand(p);
+            if (ns != null) ns.playAnim(Skill.SHIFT_IN, MORPH_TICKS);
+            ParticleEffect main = d.element != Element.NONE ? ElementZone.particle(d.element) : ParticleTypes.END_ROD;
+            w.spawnParticles(main, p.getX(), p.getY() + 1, p.getZ(), 40, 0.5, 0.8, 0.5, 0.2);
+            w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1f, 1.4f);
+            p.sendMessage(Text.translatable("msg.standgen.form", d.form.text()).formatted(Formatting.GOLD), true);
+        }
     }
 
     /** Прибрати стенд будь-якої форми (сутність або броню). */
@@ -322,6 +382,7 @@ public final class StandRuntime {
 
     /** Щотіка: чистка загублених предметів броні, пасивки й ближній бій броні. */
     public static void tickArmor(MinecraftServer server) {
+        tickMorph(server);
         int now = server.getTicks();
         StandManager mgr = StandManager.get(server);
         for (ServerPlayerEntity p : server.getPlayerManager().getPlayerList()) {

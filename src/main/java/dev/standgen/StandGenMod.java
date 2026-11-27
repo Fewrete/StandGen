@@ -97,6 +97,7 @@ public class StandGenMod implements ModInitializer {
             b.writeBoolean(canEdit(p));
             b.writeInt(d.element.id);
             b.writeInt(d.animal.id);
+            b.writeInt(d.variant);
         }
         ServerPlayNetworking.send(p, STAND_DATA, b);
     }
@@ -134,7 +135,10 @@ public class StandGenMod implements ModInitializer {
             StandRuntime.dismiss(p);
             d.shift = null;
             d.animal = Animal.NONE;
-            d.element = Element.byId(Math.floorMod(a, Element.COUNT + 1));
+            // a: 0 = немає; 1 + 2*(стихія-1) = звичайний покрас, +1 = рідкісний
+            int pick = Math.floorMod(a, Element.COUNT * 2 + 1);
+            d.element = pick == 0 ? Element.NONE : Element.byId((pick - 1) / 2 + 1);
+            d.variant = pick == 0 ? -1 : (pick - 1) % 2;
             if (d.element == Element.NONE) {
                 if (d.formId == StandForm.ELEMENTAL.ordinal() || d.formId == StandForm.ANIMAL.ordinal()) d.formId = StandForm.HUMANOID.ordinal();
             } else {

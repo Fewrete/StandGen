@@ -23,6 +23,8 @@ public class StandData {
     public int milestones;   // маска виконаних віх (для назви етапу)
     public int formId = -1;  // збережена форма; -1 = старий збережений стенд без цього поля
     public Element element = Element.NONE;   // стихія (визначається при пробудженні, зберігається)
+    /** Покрас стихії: 0 = звичайний, 1 = рідкісний (синій вогонь, червоний пісок...); -1 = ще не визначено (береться з seed). */
+    public int variant = -1;
     public Animal animal = Animal.NONE;      // тварина форми ANIMAL (визначається при пробудженні, зберігається)
 
     // Похідне (перераховується через recalc)
@@ -97,7 +99,13 @@ public class StandData {
 
         // стихія: свій відтінок основного кольору й невеликий бонус до однієї характеристики
         if (element != Element.NONE) {
-            color1 = MathHelper.hsvToRgb(frac(element.hue + (r.nextFloat() - 0.5f) * 0.03f), 0.75f + r.nextFloat() * 0.2f, 0.9f + r.nextFloat() * 0.1f);
+            if (variant < 0) variant = ((seed >>> 7) % 100L) < 25L ? 1 : 0;   // ~25% рідкісний покрас
+            float[] pal = element.palette(variant == 1);
+            // обидва кольори з палітри стихії (колір типу душі тут не береться, щоб пісок не став рожевим)
+            color1 = MathHelper.hsvToRgb(frac(pal[0] + (r.nextFloat() - 0.5f) * 0.02f),
+                    MathHelper.clamp(pal[1] + (r.nextFloat() - 0.5f) * 0.1f, 0f, 1f), MathHelper.clamp(pal[2] + (r.nextFloat() - 0.5f) * 0.08f, 0f, 1f));
+            color2 = MathHelper.hsvToRgb(frac(pal[3] + (r.nextFloat() - 0.5f) * 0.02f),
+                    MathHelper.clamp(pal[4] + (r.nextFloat() - 0.5f) * 0.1f, 0f, 1f), MathHelper.clamp(pal[5] + (r.nextFloat() - 0.5f) * 0.08f, 0f, 1f));
             switch (element) {
                 case FIRE -> power = mul(power, 1.08f);
                 case WATER -> mastery = mul(mastery, 1.1f);
@@ -217,7 +225,7 @@ public class StandData {
                 : form == StandForm.WEAPON
                 ? Text.translatable("msg.standgen.form_weapon", form.text(), primary.weaponText())
                 : Text.translatable("msg.standgen.form", form.text())).formatted(Formatting.YELLOW));
-        if (element != Element.NONE) l.add(Text.translatable("msg.standgen.element", element.text()).formatted(Formatting.GOLD));
+        if (element != Element.NONE) l.add(Text.translatable("msg.standgen.element", element.text(variant == 1)).formatted(Formatting.GOLD));
         if (animal != Animal.NONE) l.add(Text.translatable("msg.standgen.animal", animal.text()).formatted(Formatting.GOLD));
         l.add(Text.translatable("msg.standgen.stage", stage, Progression.labelText(milestones)).formatted(Formatting.AQUA));
         l.add(statLine("power", power).append("   ").append(statLine("speed", speed)).formatted(Formatting.WHITE));
@@ -253,6 +261,7 @@ public class StandData {
         n.putInt("ms", milestones);
         n.putInt("form", formId);
         n.putInt("el", element.id);
+        n.putInt("elv", variant);
         n.putInt("an", animal.id);
         for (int i = 0; i < scores.length; i++) n.putFloat("s" + i, scores[i]);
         return n;
@@ -268,6 +277,7 @@ public class StandData {
         d.milestones = n.contains("ms") ? n.getInt("ms") : (1 << Math.min(d.stage, 30)) - 1;
         d.formId = n.contains("form") ? n.getInt("form") : -1;
         d.element = Element.byId(n.contains("el") ? n.getInt("el") : 0);
+        d.variant = n.contains("elv") ? n.getInt("elv") : -1;
         d.animal = Animal.byId(n.contains("an") ? n.getInt("an") : 0);
         for (int i = 0; i < d.scores.length; i++) d.scores[i] = n.getFloat("s" + i);
         d.recalc();

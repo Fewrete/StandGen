@@ -95,7 +95,8 @@ public class StandGenClient implements ClientModInitializer {
                 boolean edit = buf.readBoolean();
                 int el = buf.readInt();
                 int an = buf.readInt();
-                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit, el, an);
+                int var = buf.readInt();
+                data = new StandClientData(name, pr, se, fo, st, ms, po, sp, ra, du, pc, ma, sc, edit, el, an, var);
             }
             StandClientData fin = data;
             client.execute(() -> StandClientData.current = fin);

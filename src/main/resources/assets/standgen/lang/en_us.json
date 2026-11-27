@@ -170,5 +170,9 @@
   "standgen.menu.animal": "Animal: %s",
   "standgen.menu.anim_btn": "Animal: %s (click to change)",
   "standgen.menu.src.animal": "animal",
-  "key.standgen.mount": "Ride / glide (beast stand)"
+  "key.standgen.mount": "Ride / glide (beast stand)",
+  "standgen.element.fire_alt": "Blue Fire",
+  "standgen.element.water_alt": "Tropical Water",
+  "standgen.element.ice_alt": "Deep Blue Ice",
+  "standgen.element.sand_alt": "Red Sand"
 }

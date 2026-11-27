@@ -81,6 +81,17 @@ public class StandRenderer extends EntityRenderer<StandEntity> {
         m.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f - bodyYaw));
         m.scale(-1.0f, -1.0f, 1.0f);
 
+        // перетворення: стара форма скручується й стискається, нова з'являється, розкручуючись
+        Skill morph = e.getAnim();
+        if (morph == Skill.SHIFT || morph == Skill.SHIFT_IN) {
+            float mp = MathHelper.clamp(e.getAnimElapsed(tickDelta) / e.getAnimDur(), 0f, 1f);
+            float ms = morph == Skill.SHIFT ? 1f - mp : mp;
+            ms = ms * ms * (3f - 2f * ms);
+            float sc = 0.04f + 0.96f * ms;
+            m.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(mp * 540f));
+            m.scale(sc, sc * (1f + 1.3f * (1f - ms)), sc);
+        }
+
         switch (e.getForm()) {
             case WEAPON -> {
                 float k = e.getHeightScale() * 0.8f + stage * 0.03f;

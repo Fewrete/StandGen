@@ -45,7 +45,9 @@ public enum Skill {
     POUNCE(200), SCENT(500), HOWL(1500),                 // собака
     MAUL(240), ROAR(600), HIBERNATE(1700),               // ведмідь
     TALON_DIVE(220), UPDRAFT(500), GALE(1600),           // орел
-    TRAMPLE(220), KICK(300), GALLOP(1500);               // кінь
+    TRAMPLE(220), KICK(300), GALLOP(1500),               // кінь
+    // лише для анімації (у слотах не буває): поява стенда в новій формі після перетворення
+    SHIFT_IN(0);
 
     /** Стадія, з якої відкривається слот. */
     public static final int[] UNLOCK = {0, 2, 3, 4};

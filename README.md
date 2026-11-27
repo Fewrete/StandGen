@@ -1,4 +1,4 @@
-# StandGen 0.2.7 (Fabric 1.20.1)
+# StandGen 0.2.7b (Fabric 1.20.1)
 
 Stands that are generated from **how you play**. Your actions decide your stand's type, look and abilities, and the stand
 evolves together with your progress through the game. Inspired by the "stand" idea from JoJo, with no copied characters or assets.
@@ -6,7 +6,13 @@ evolves together with your progress through the game. Inspired by the "stand" id
 - Requires: **Fabric Loader** + **Fabric API** (the only dependency), Minecraft 1.20.1, Java 17.
 - Languages: English, Ukrainian (uk_ua), Russian (ru_ru), German (de_de).
 
-## What's new in this update: Beast stands
+## What's new in this update (0.2.7b)
+- **Element colours reworked.** Elemental stands now use a palette that matches the element: Fire (orange), Water (blue), Ice (light cyan), Sand (yellow).
+  Each element also has a **rare alternative colour**: Blue Fire, Tropical Water, Deep Blue Ice and Red Sand. The soul type no longer tints elemental stands.
+- **Transformation animation.** The Elemental stand's Transformation skill is no longer a shockwave: the current form twists and shrinks into a spiral of
+  element particles, then the new form unfolds in its place.
+
+### Beast stands
 - **A new, separate stand form: Beast** with four animals: **Dog, Bear, Eagle and Horse**. What draws a soul to an animal is hidden, so discover it by playing.
   Souls that match nothing still have a small chance to get a random animal. Each animal has its own model, behaviour, three skills and passive bonus:
   - **Dog:** fast, bites often and slows its prey. Pounce, Scent (highlights enemies), Pack Howl (buffs allies, scares enemies).
